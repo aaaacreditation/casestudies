@@ -36,7 +36,7 @@ next-env.d.ts
 
 # Prisma
 prisma/migrations/
-app/generated/
+# Note: app/generated/ should be committed for Vercel deployment
 node_modules/.prisma/
 .prisma/
 
