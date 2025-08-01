@@ -202,7 +202,7 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                 {/* Quote Section */}
                 <div className="bg-slate-100 border-l-4 border-[#0a4373] rounded-r-2xl p-8 mb-8">
                   <blockquote className="text-xl italic text-slate-700 leading-relaxed">
-                    "{caseStudy.excerpt}"
+                    &ldquo;{caseStudy.excerpt}&rdquo;
                   </blockquote>
                   <div className="mt-4 text-sm text-slate-600">
                     — Key stakeholder at {caseStudy.company.name}

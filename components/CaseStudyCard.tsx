@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ArrowRight, Clock, MapPin, Users } from 'lucide-react'
+import { ArrowRight, Clock, MapPin } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { CaseStudy } from '@/types'

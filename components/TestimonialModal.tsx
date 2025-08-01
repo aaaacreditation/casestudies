@@ -81,7 +81,7 @@ export default function TestimonialModal({
 
                 {/* Quote */}
                 <blockquote className="text-xl leading-relaxed text-gray-900 mb-6 italic">
-                  "{testimonial.quote}"
+                  &ldquo;{testimonial.quote}&rdquo;
                 </blockquote>
 
                 {/* Author */}

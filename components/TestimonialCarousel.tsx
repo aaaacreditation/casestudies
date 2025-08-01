@@ -29,7 +29,7 @@ export default function TestimonialCarousel({
         <div className="text-center">
           <Quote className="w-16 h-16 mx-auto mb-6 text-blue-300" />
           <h2 className="text-white text-5xl md:text-6xl font-bold mb-6 leading-tight">
-            Trusted by the world's
+            Trusted by the world&rsquo;s
             <span className="block bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
               best teams
             </span>
@@ -193,9 +193,9 @@ const TestimonialList = ({
                   </p>
                 </div>
                 
-                <blockquote className="text-sm text-white/90 leading-relaxed line-clamp-4">
-                  "{testimonial.quote}"
-                </blockquote>
+                                            <blockquote className="text-sm text-white/90 leading-relaxed line-clamp-4">
+                              &ldquo;{testimonial.quote}&rdquo;
+                            </blockquote>
               </div>
 
               {/* Company badge */}

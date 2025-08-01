@@ -20,7 +20,7 @@ export interface CaseStudy {
   excerpt: string
   featuredImage?: string
   tags: string[]
-  metrics?: any
+  metrics?: Record<string, string>
   published: boolean
   featured: boolean
   readTime?: number

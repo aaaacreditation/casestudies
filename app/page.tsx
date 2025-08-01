@@ -223,7 +223,7 @@ const statsData = [
 
 export default function Home() {
   const router = useRouter()
-  const [caseStudies, setCaseStudies] = useState<CaseStudy[]>(mockCaseStudies)
+  const [caseStudies] = useState<CaseStudy[]>(mockCaseStudies)
   const [filteredCaseStudies, setFilteredCaseStudies] = useState<CaseStudy[]>(mockCaseStudies)
   const [filters, setFilters] = useState<FilterOptions>({})
   const [searchQuery, setSearchQuery] = useState('')
@@ -673,11 +673,10 @@ export default function Home() {
 
           {/* Case Studies Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredCaseStudies.map((caseStudy, index) => (
+                                    {filteredCaseStudies.map((caseStudy) => (
               <CaseStudyCard
                 key={caseStudy.id}
                 caseStudy={caseStudy}
-                index={index}
               />
             ))}
           </div>
