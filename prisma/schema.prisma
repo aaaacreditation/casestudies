@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  logo        String?
+  website     String?
+  industry    String
+  location    String
+  size        String   // e.g., "1,000+", "100-499"
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  caseStudies CaseStudy[]
+  testimonials Testimonial[]
+
+  @@map("companies")
+}
+
+model CaseStudy {
+  id            String   @id @default(cuid())
+  title         String
+  subtitle      String?
+  slug          String   @unique
+  content       String   // Rich text content
+  excerpt       String   // Short description for cards
+  featuredImage String?
+  tags          String[] // e.g., ["Technology", "Growth", "Efficiency"]
+  metrics       Json?    // Key metrics like "86% more insights", "48+ hours saved"
+  published     Boolean  @default(false)
+  featured      Boolean  @default(false)
+  readTime      Int?     // Reading time in minutes
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  testimonials Testimonial[]
+
+  @@map("case_studies")
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  quote     String
+  author    String
+  position  String
+  avatar    String?
+  featured  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  companyId   String
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  caseStudyId String?
+  caseStudy   CaseStudy? @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
+
+  @@map("testimonials")
+}
