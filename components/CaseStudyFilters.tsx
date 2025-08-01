@@ -32,7 +32,7 @@ export default function CaseStudyFilters({
     onFiltersChange({})
   }
 
-  const updateFilter = (key: keyof FilterOptions, value: string | string[]) => {
+  const updateFilter = (key: keyof FilterOptions, value: string | string[] | undefined) => {
     onFiltersChange({
       ...filters,
       [key]: value
@@ -45,7 +45,7 @@ export default function CaseStudyFilters({
       ? currentTags.filter(t => t !== tag)
       : [...currentTags, tag]
     
-    updateFilter('tags', newTags.length > 0 ? newTags : undefined as any)
+    updateFilter('tags', newTags.length > 0 ? newTags : undefined)
   }
 
   const FilterDropdown = ({ 
@@ -138,7 +138,7 @@ export default function CaseStudyFilters({
             title="Industry"
             options={availableOptions.industries}
             value={filters.industry}
-            onChange={(value) => updateFilter('industry', value || undefined as any)}
+            onChange={(value) => updateFilter('industry', value || undefined)}
           />
 
           {/* Company Size Filter */}
@@ -146,7 +146,7 @@ export default function CaseStudyFilters({
             title="Company size"
             options={availableOptions.sizes}
             value={filters.size}
-            onChange={(value) => updateFilter('size', value || undefined as any)}
+            onChange={(value) => updateFilter('size', value || undefined)}
           />
 
           {/* Location Filter */}
@@ -154,7 +154,7 @@ export default function CaseStudyFilters({
             title="Location"
             options={availableOptions.locations}
             value={filters.location}
-            onChange={(value) => updateFilter('location', value || undefined as any)}
+            onChange={(value) => updateFilter('location', value || undefined)}
           />
 
           {/* Clear All Button */}
@@ -199,7 +199,7 @@ export default function CaseStudyFilters({
             <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#0a4373]/10 text-[#0a4373] rounded-full text-sm">
               Industry: {filters.industry}
               <button
-                onClick={() => updateFilter('industry', undefined as any)}
+                onClick={() => updateFilter('industry', undefined)}
                 className="ml-1 hover:bg-[#0a4373]/20 rounded-full p-1"
               >
                 <X className="w-3 h-3" />
@@ -210,7 +210,7 @@ export default function CaseStudyFilters({
             <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#0a4373]/10 text-[#0a4373] rounded-full text-sm">
               Size: {filters.size}
               <button
-                onClick={() => updateFilter('size', undefined as any)}
+                onClick={() => updateFilter('size', undefined)}
                 className="ml-1 hover:bg-[#0a4373]/20 rounded-full p-1"
               >
                 <X className="w-3 h-3" />
@@ -221,7 +221,7 @@ export default function CaseStudyFilters({
             <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#0a4373]/10 text-[#0a4373] rounded-full text-sm">
               Location: {filters.location}
               <button
-                onClick={() => updateFilter('location', undefined as any)}
+                onClick={() => updateFilter('location', undefined)}
                 className="ml-1 hover:bg-[#0a4373]/20 rounded-full p-1"
               >
                 <X className="w-3 h-3" />

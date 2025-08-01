@@ -19,7 +19,7 @@ export default function NotFound() {
           </h1>
           
           <p className="text-lg text-slate-600 mb-8">
-            The case study you're looking for doesn't exist or may have been moved.
+            The case study you&rsquo;re looking for doesn&rsquo;t exist or may have been moved.
           </p>
           
           <div className="space-y-4">

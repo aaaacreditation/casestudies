@@ -415,7 +415,7 @@ export default function Home() {
                 { number: "500+", label: "Companies", delay: 0.9 },
                 { number: "50+", label: "Countries", delay: 1.0 },
                 { number: "98%", label: "Satisfaction", delay: 1.1 }
-              ].map((stat, index) => (
+              ].map((stat) => (
                 <motion.div
                   key={stat.label}
                   className="text-center group"
