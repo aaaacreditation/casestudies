@@ -9,17 +9,18 @@ interface CaseStudyFiltersProps {
   filters: FilterOptions
   onFiltersChange: (filters: FilterOptions) => void
   availableOptions: {
-    industries: string[]
-    sizes: string[]
-    locations: string[]
-    tags: string[]
+    countries: string[]
   }
+  searchQuery: string
+  onSearchChange: (query: string) => void
 }
 
 export default function CaseStudyFilters({ 
   filters, 
   onFiltersChange, 
-  availableOptions 
+  availableOptions,
+  searchQuery,
+  onSearchChange
 }: CaseStudyFiltersProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
@@ -39,14 +40,7 @@ export default function CaseStudyFilters({
     })
   }
 
-  const toggleTag = (tag: string) => {
-    const currentTags = filters.tags || []
-    const newTags = currentTags.includes(tag)
-      ? currentTags.filter(t => t !== tag)
-      : [...currentTags, tag]
-    
-    updateFilter('tags', newTags.length > 0 ? newTags : undefined)
-  }
+
 
   const FilterDropdown = ({ 
     title, 
@@ -133,29 +127,34 @@ export default function CaseStudyFilters({
       {/* Filter Content */}
       <div className={`${isOpen ? 'block' : 'hidden'} md:block`}>
         <div className="flex flex-wrap gap-4 items-center">
-          {/* Industry Filter */}
+          <span className="text-sm font-medium text-gray-700">Filters By:</span>
+          
+          {/* Type Filter */}
           <FilterDropdown
-            title="Industry"
-            options={availableOptions.industries}
-            value={filters.industry}
-            onChange={(value) => updateFilter('industry', value || undefined)}
+            title="Type"
+            options={['Healthcare', 'Training/Education', 'Laboratories', 'Certification bodies', 'Inspection Bodies']}
+            value={filters.type}
+            onChange={(value) => updateFilter('type', value || undefined)}
           />
 
-          {/* Company Size Filter */}
+          {/* Country Filter */}
           <FilterDropdown
-            title="Company size"
-            options={availableOptions.sizes}
-            value={filters.size}
-            onChange={(value) => updateFilter('size', value || undefined)}
+            title="Country"
+            options={availableOptions.countries}
+            value={filters.country}
+            onChange={(value) => updateFilter('country', value || undefined)}
           />
 
-          {/* Location Filter */}
-          <FilterDropdown
-            title="Location"
-            options={availableOptions.locations}
-            value={filters.location}
-            onChange={(value) => updateFilter('location', value || undefined)}
-          />
+          {/* Search Input */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none transition-all text-sm w-48"
+            />
+          </div>
 
           {/* Clear All Button */}
           {activeFiltersCount > 0 && (
@@ -168,80 +167,33 @@ export default function CaseStudyFilters({
             </button>
           )}
         </div>
-
-        {/* Tags */}
-        {availableOptions.tags.length > 0 && (
-          <div className="mt-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Tags</h3>
-            <div className="flex flex-wrap gap-2">
-              {availableOptions.tags.map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => toggleTag(tag)}
-                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                    filters.tags?.includes(tag)
-                      ? 'bg-[#0a4373] text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Active Filters Display */}
       {activeFiltersCount > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
-          {filters.industry && (
+          {filters.type && (
             <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#0a4373]/10 text-[#0a4373] rounded-full text-sm">
-              Industry: {filters.industry}
+              Type: {filters.type}
               <button
-                onClick={() => updateFilter('industry', undefined)}
+                onClick={() => updateFilter('type', undefined)}
                 className="ml-1 hover:bg-[#0a4373]/20 rounded-full p-1"
               >
                 <X className="w-3 h-3" />
               </button>
             </span>
           )}
-          {filters.size && (
+          {filters.country && (
             <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#0a4373]/10 text-[#0a4373] rounded-full text-sm">
-              Size: {filters.size}
+              Country: {filters.country}
               <button
-                onClick={() => updateFilter('size', undefined)}
+                onClick={() => updateFilter('country', undefined)}
                 className="ml-1 hover:bg-[#0a4373]/20 rounded-full p-1"
               >
                 <X className="w-3 h-3" />
               </button>
             </span>
           )}
-          {filters.location && (
-            <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#0a4373]/10 text-[#0a4373] rounded-full text-sm">
-              Location: {filters.location}
-              <button
-                onClick={() => updateFilter('location', undefined)}
-                className="ml-1 hover:bg-[#0a4373]/20 rounded-full p-1"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          )}
-          {filters.tags?.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center gap-1 px-3 py-1 bg-[#0a4373]/10 text-[#0a4373] rounded-full text-sm"
-            >
-              {tag}
-              <button
-                onClick={() => toggleTag(tag)}
-                className="ml-1 hover:bg-[#0a4373]/20 rounded-full p-1"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          ))}
         </div>
       )}
     </div>

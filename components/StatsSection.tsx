@@ -29,20 +29,7 @@ export default function StatsSection({ stats }: StatsSectionProps) {
   return (
     <section className="py-20 bg-gradient-to-b from-white to-slate-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div 
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6">
-            Transforming businesses worldwide
-          </h2>
-          <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-            See the measurable impact our platform delivers to teams across industries, 
-            from startups to Fortune 500 companies.
-          </p>
-        </motion.div>
+
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {stats.map((stat, index) => (

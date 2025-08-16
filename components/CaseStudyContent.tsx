@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ArrowLeft, Clock, MapPin, Users, Calendar, Share2, ExternalLink } from 'lucide-react'
+import { ArrowLeft, MapPin, Users, Share2, ExternalLink } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { CaseStudy } from '@/types'
@@ -38,41 +38,49 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="flex items-center gap-4 mb-8"
+                className="flex items-center justify-between mb-8"
               >
-                {caseStudy.company.logo ? (
-                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-50 flex items-center justify-center border border-slate-200">
-                    <Image
-                      src={caseStudy.company.logo}
-                      alt={caseStudy.company.name}
-                      width={48}
-                      height={48}
-                      className="object-contain"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#0a4373] to-[#083455] flex items-center justify-center">
-                    <span className="text-white font-bold text-xl">
-                      {caseStudy.company.name.charAt(0)}
-                    </span>
-                  </div>
-                )}
-                
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-1">
-                    {caseStudy.company.name}
-                  </h3>
-                  <div className="flex items-center gap-4 text-sm text-slate-600">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="w-4 h-4" />
-                      {caseStudy.company.location}
+                <div className="flex items-center gap-4">
+                  {caseStudy.company.logo ? (
+                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-50 flex items-center justify-center border border-slate-200">
+                      <Image
+                        src={caseStudy.company.logo}
+                        alt={caseStudy.company.name}
+                        width={48}
+                        height={48}
+                        className="object-contain"
+                      />
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Users className="w-4 h-4" />
-                      {caseStudy.company.size} employees
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#0a4373] to-[#083455] flex items-center justify-center">
+                      <span className="text-white font-bold text-xl">
+                        {caseStudy.company.name.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900 mb-1">
+                      {caseStudy.company.name}
+                    </h3>
+                    <div className="flex items-center gap-4 text-sm text-slate-600">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4" />
+                        {caseStudy.company.location}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Users className="w-4 h-4" />
+                        {caseStudy.company.size} employees
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Share Button */}
+                <button className="flex items-center gap-2 text-sm text-[#0a4373] hover:text-[#083455] transition-colors">
+                  <Share2 className="w-4 h-4" />
+                  <span>Share</span>
+                </button>
               </motion.div>
 
               {/* Title and Subtitle */}
@@ -92,28 +100,7 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                 )}
               </motion.div>
 
-              {/* Meta Information */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="flex flex-wrap items-center gap-6 mb-8 pb-8 border-b border-slate-200"
-              >
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <Clock className="w-4 h-4" />
-                  <span>{caseStudy.readTime || 5} min read</span>
-                </div>
-                
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <Calendar className="w-4 h-4" />
-                  <span>{caseStudy.createdAt.toLocaleDateString()}</span>
-                </div>
 
-                <button className="flex items-center gap-2 text-sm text-[#0a4373] hover:text-[#083455] transition-colors">
-                  <Share2 className="w-4 h-4" />
-                  <span>Share</span>
-                </button>
-              </motion.div>
 
               {/* Featured Image */}
               {caseStudy.featuredImage && (

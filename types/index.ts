@@ -47,8 +47,6 @@ export interface Testimonial {
 }
 
 export interface FilterOptions {
-  industry?: string
-  size?: string
-  location?: string
-  tags?: string[]
+  type?: string
+  country?: string
 }
