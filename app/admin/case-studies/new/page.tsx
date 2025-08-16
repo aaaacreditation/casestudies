@@ -12,7 +12,10 @@ import {
   Building2,
   Tag,
   Save,
-  Eye
+  Eye,
+  Upload,
+  X,
+  Youtube
 } from 'lucide-react'
 import Link from 'next/link'
 import { MediaType } from '@/types'
@@ -63,8 +66,13 @@ export default function NewCaseStudy() {
     tags: '',
     metrics: '',
     published: false,
-    featured: false
+    featured: false,
+    featuredVideoUrl: '', // For YouTube URLs
+    companyLogo: ''
   })
+  const [featuredImage, setFeaturedImage] = useState<File | null>(null)
+  const [featuredVideo, setFeaturedVideo] = useState<File | null>(null)
+  const [additionalMedia, setAdditionalMedia] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -75,6 +83,31 @@ export default function NewCaseStudy() {
     }))
   }
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'featuredImage' | 'featuredVideo' | 'additional' | 'companyLogo') => {
+    const files = e.target.files
+    if (!files) return
+
+    if (type === 'featuredImage') {
+      setFeaturedImage(files[0])
+    } else if (type === 'featuredVideo') {
+      setFeaturedVideo(files[0])
+    } else if (type === 'companyLogo') {
+      // Handle company logo separately if needed
+    } else if (type === 'additional') {
+      setAdditionalMedia(prev => [...prev, ...Array.from(files)])
+    }
+  }
+
+  const removeFile = (type: 'featuredImage' | 'featuredVideo' | 'additional', index?: number) => {
+    if (type === 'featuredImage') {
+      setFeaturedImage(null)
+    } else if (type === 'featuredVideo') {
+      setFeaturedVideo(null)
+    } else if (type === 'additional' && index !== undefined) {
+      setAdditionalMedia(prev => prev.filter((_, i) => i !== index))
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedMediaType) return
@@ -82,22 +115,53 @@ export default function NewCaseStudy() {
     setLoading(true)
 
     try {
+      // First create the case study
+      const caseStudyData = {
+        ...formData,
+        mediaType: selectedMediaType,
+        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+        metrics: formData.metrics ? JSON.parse(formData.metrics) : null,
+        featuredVideo: formData.featuredVideoUrl || undefined
+      }
+
       const response = await fetch('/api/case-studies', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          ...formData,
-          mediaType: selectedMediaType,
-          tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
-          metrics: formData.metrics ? JSON.parse(formData.metrics) : null
-        })
+        body: JSON.stringify(caseStudyData)
       })
 
       if (response.ok) {
         const caseStudy = await response.json()
-        router.push(`/admin/case-studies/${caseStudy.id}/media`)
+
+        // If there are files to upload, upload them
+        if (featuredImage || featuredVideo || additionalMedia.length > 0) {
+          const formData = new FormData()
+          
+          if (featuredImage) {
+            formData.append('featuredImage', featuredImage)
+          }
+          
+          if (featuredVideo) {
+            formData.append('featuredVideo', featuredVideo)
+          }
+          
+          additionalMedia.forEach((file) => {
+            formData.append('additionalMedia', file)
+          })
+
+          const uploadResponse = await fetch(`/api/case-studies/${caseStudy.id}/media`, {
+            method: 'POST',
+            body: formData
+          })
+
+          if (!uploadResponse.ok) {
+            console.error('Error uploading media')
+          }
+        }
+
+        router.push('/admin/dashboard')
       } else {
         alert('Error creating case study')
       }
@@ -376,6 +440,212 @@ export default function NewCaseStudy() {
                   </div>
                 </div>
               </div>
+
+              {/* Media Upload Section */}
+              {selectedMediaType && (
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                      <Upload className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900">Media Content</h3>
+                  </div>
+
+                  {/* Company Logo */}
+                  <div className="mb-6">
+                    <label htmlFor="companyLogo" className="block text-sm font-medium text-slate-700 mb-2">
+                      Company Logo URL
+                    </label>
+                    <input
+                      type="url"
+                      id="companyLogo"
+                      name="companyLogo"
+                      value={formData.companyLogo}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none"
+                      placeholder="https://example.com/logo.png"
+                    />
+                  </div>
+
+                  {/* Featured Image Upload - for IMAGE_ONLY and IMAGE_AND_VIDEO */}
+                  {(selectedMediaType === MediaType.IMAGE_ONLY || selectedMediaType === MediaType.IMAGE_AND_VIDEO) && (
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Featured Image *
+                      </label>
+                      {!featuredImage ? (
+                        <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
+                          <ImageIcon className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+                          <div className="space-y-2">
+                            <p className="text-slate-600">Upload featured image</p>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleFileUpload(e, 'featuredImage')}
+                              className="hidden"
+                              id="featured-image"
+                              required={selectedMediaType === MediaType.IMAGE_ONLY}
+                            />
+                            <label
+                              htmlFor="featured-image"
+                              className="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 cursor-pointer"
+                            >
+                              <Upload className="w-4 h-4 mr-2" />
+                              Choose File
+                            </label>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <img
+                            src={URL.createObjectURL(featuredImage)}
+                            alt="Featured"
+                            className="w-full h-64 object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeFile('featuredImage')}
+                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                          <p className="mt-2 text-sm text-slate-600">{featuredImage.name}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Featured Video - for VIDEO_ONLY and IMAGE_AND_VIDEO */}
+                  {(selectedMediaType === MediaType.VIDEO_ONLY || selectedMediaType === MediaType.IMAGE_AND_VIDEO) && (
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium text-slate-700 mb-4">
+                        Featured Video *
+                      </label>
+                      
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* YouTube URL Option */}
+                        <div>
+                          <label htmlFor="featuredVideoUrl" className="block text-sm font-medium text-slate-600 mb-2">
+                            <Youtube className="w-4 h-4 inline mr-1" />
+                            YouTube URL
+                          </label>
+                          <input
+                            type="url"
+                            id="featuredVideoUrl"
+                            name="featuredVideoUrl"
+                            value={formData.featuredVideoUrl}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none"
+                            placeholder="https://youtube.com/watch?v=..."
+                          />
+                        </div>
+
+                        {/* OR Video File Upload */}
+                        <div>
+                          <label className="block text-sm font-medium text-slate-600 mb-2">
+                            <Video className="w-4 h-4 inline mr-1" />
+                            OR Upload Video File
+                          </label>
+                          {!featuredVideo ? (
+                            <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center">
+                              <Video className="mx-auto h-8 w-8 text-slate-400 mb-2" />
+                              <input
+                                type="file"
+                                accept="video/*"
+                                onChange={(e) => handleFileUpload(e, 'featuredVideo')}
+                                className="hidden"
+                                id="featured-video"
+                              />
+                              <label
+                                htmlFor="featured-video"
+                                className="inline-flex items-center px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 cursor-pointer"
+                              >
+                                <Upload className="w-3 h-3 mr-1" />
+                                Choose File
+                              </label>
+                            </div>
+                          ) : (
+                            <div className="relative">
+                              <video
+                                src={URL.createObjectURL(featuredVideo)}
+                                className="w-full h-32 object-cover rounded-lg"
+                                controls
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeFile('featuredVideo')}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                              <p className="mt-1 text-xs text-slate-600">{featuredVideo.name}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-2">Choose either a YouTube URL or upload a video file</p>
+                    </div>
+                  )}
+
+                  {/* Additional Media */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Additional Media (Optional)
+                    </label>
+                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center mb-4">
+                      <Upload className="mx-auto h-8 w-8 text-slate-400 mb-2" />
+                      <div className="space-y-2">
+                        <p className="text-slate-600 text-sm">Upload additional images or videos</p>
+                        <input
+                          type="file"
+                          accept="image/*,video/*"
+                          multiple
+                          onChange={(e) => handleFileUpload(e, 'additional')}
+                          className="hidden"
+                          id="additional-media"
+                        />
+                        <label
+                          htmlFor="additional-media"
+                          className="inline-flex items-center px-3 py-1.5 border border-slate-300 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 cursor-pointer"
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Choose Files
+                        </label>
+                      </div>
+                    </div>
+
+                    {additionalMedia.length > 0 && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {additionalMedia.map((file, index) => (
+                          <div key={index} className="relative">
+                            {file.type.startsWith('image/') ? (
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={`Additional ${index}`}
+                                className="w-full h-20 object-cover rounded-lg"
+                              />
+                            ) : (
+                              <video
+                                src={URL.createObjectURL(file)}
+                                className="w-full h-20 object-cover rounded-lg"
+                                controls
+                              />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => removeFile('additional', index)}
+                              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                            <p className="mt-1 text-xs text-slate-600 truncate">{file.name}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Additional Information */}
               <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">

@@ -59,11 +59,13 @@ export async function POST(request: NextRequest) {
       companySize,
       companyWebsite,
       companyDescription,
+      companyLogo,
       tags,
       metrics,
       mediaType,
       published,
-      featured
+      featured,
+      featuredVideo
     } = body
 
     // Generate slug
@@ -93,6 +95,7 @@ export async function POST(request: NextRequest) {
       company = await prisma.company.create({
         data: {
           name: companyName,
+          logo: companyLogo || '',
           industry: companyIndustry,
           location: companyLocation,
           size: companySize,
@@ -115,6 +118,7 @@ export async function POST(request: NextRequest) {
         mediaType: mediaType as MediaType,
         published: published || false,
         featured: featured || false,
+        featuredVideo: featuredVideo || null,
         companyId: company.id
       },
       include: {

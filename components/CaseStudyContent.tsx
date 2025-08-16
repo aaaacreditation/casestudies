@@ -6,6 +6,18 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { CaseStudy } from '@/types'
 
+// Helper function to extract YouTube video ID from URL
+function getYouTubeVideoId(url: string): string | null {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
+  const match = url.match(regExp)
+  return (match && match[2].length === 11) ? match[2] : null
+}
+
+// Helper function to check if URL is a YouTube URL
+function isYouTubeUrl(url: string): boolean {
+  return url.includes('youtube.com') || url.includes('youtu.be')
+}
+
 interface CaseStudyContentProps {
   caseStudy: CaseStudy
 }
@@ -112,14 +124,23 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                 >
                   {caseStudy.mediaType === 'VIDEO_ONLY' && caseStudy.featuredVideo ? (
                     <div className="relative h-96 rounded-2xl overflow-hidden shadow-lg">
-                      <video
-                        src={caseStudy.featuredVideo}
-                        controls
-                        className="w-full h-full object-cover"
-                        poster={caseStudy.featuredImage}
-                      >
-                        Your browser does not support the video tag.
-                      </video>
+                      {isYouTubeUrl(caseStudy.featuredVideo) ? (
+                        <iframe
+                          src={`https://www.youtube.com/embed/${getYouTubeVideoId(caseStudy.featuredVideo)}`}
+                          className="w-full h-full"
+                          allowFullScreen
+                          title="YouTube video player"
+                        />
+                      ) : (
+                        <video
+                          src={caseStudy.featuredVideo}
+                          controls
+                          className="w-full h-full object-cover"
+                          poster={caseStudy.featuredImage}
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      )}
                     </div>
                   ) : caseStudy.mediaType === 'IMAGE_AND_VIDEO' ? (
                     <div className="space-y-6">
@@ -136,13 +157,22 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                       )}
                       {caseStudy.featuredVideo && (
                         <div className="relative h-96 rounded-2xl overflow-hidden shadow-lg">
-                          <video
-                            src={caseStudy.featuredVideo}
-                            controls
-                            className="w-full h-full object-cover"
-                          >
-                            Your browser does not support the video tag.
-                          </video>
+                          {isYouTubeUrl(caseStudy.featuredVideo) ? (
+                            <iframe
+                              src={`https://www.youtube.com/embed/${getYouTubeVideoId(caseStudy.featuredVideo)}`}
+                              className="w-full h-full"
+                              allowFullScreen
+                              title="YouTube video player"
+                            />
+                          ) : (
+                            <video
+                              src={caseStudy.featuredVideo}
+                              controls
+                              className="w-full h-full object-cover"
+                            >
+                              Your browser does not support the video tag.
+                            </video>
+                          )}
                         </div>
                       )}
                     </div>
