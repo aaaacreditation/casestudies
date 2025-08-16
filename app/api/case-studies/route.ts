@@ -59,7 +59,6 @@ export async function POST(request: NextRequest) {
       companySize,
       companyWebsite,
       companyDescription,
-      companyLogo,
       tags,
       metrics,
       mediaType,
@@ -95,7 +94,7 @@ export async function POST(request: NextRequest) {
       company = await prisma.company.create({
         data: {
           name: companyName,
-          logo: companyLogo || '',
+          logo: '', // Will be updated via media upload
           industry: companyIndustry,
           location: companyLocation,
           size: companySize,

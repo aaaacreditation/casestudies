@@ -38,6 +38,7 @@ export async function POST(
     }
 
     const updateData: { featuredImage?: string; featuredVideo?: string } = {}
+    const companyUpdateData: { logo?: string } = {}
 
     // Handle featured image
     const featuredImage = formData.get('featuredImage') as File
@@ -63,6 +64,19 @@ export async function POST(
       
       await writeFile(filepath, buffer)
       updateData.featuredVideo = `/uploads/case-studies/${id}/${filename}`
+    }
+
+    // Handle company logo
+    const companyLogo = formData.get('companyLogo') as File
+    if (companyLogo) {
+      const bytes = await companyLogo.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+      
+      const filename = `company-logo-${Date.now()}.${companyLogo.name.split('.').pop()}`
+      const filepath = join(uploadsDir, filename)
+      
+      await writeFile(filepath, buffer)
+      companyUpdateData.logo = `/uploads/case-studies/${id}/${filename}`
     }
 
     // Handle additional media
@@ -103,6 +117,14 @@ export async function POST(
         media: true
       }
     })
+
+    // Update company logo if provided
+    if (companyUpdateData.logo) {
+      await prisma.company.update({
+        where: { id: caseStudy.companyId },
+        data: companyUpdateData
+      })
+    }
 
     return NextResponse.json({
       caseStudy: updatedCaseStudy,

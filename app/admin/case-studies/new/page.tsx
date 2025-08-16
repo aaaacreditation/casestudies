@@ -67,12 +67,12 @@ export default function NewCaseStudy() {
     metrics: '',
     published: false,
     featured: false,
-    featuredVideoUrl: '', // For YouTube URLs
-    companyLogo: ''
+    featuredVideoUrl: '' // For YouTube URLs
   })
   const [featuredImage, setFeaturedImage] = useState<File | null>(null)
   const [featuredVideo, setFeaturedVideo] = useState<File | null>(null)
   const [additionalMedia, setAdditionalMedia] = useState<File[]>([])
+  const [companyLogo, setCompanyLogo] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -92,17 +92,19 @@ export default function NewCaseStudy() {
     } else if (type === 'featuredVideo') {
       setFeaturedVideo(files[0])
     } else if (type === 'companyLogo') {
-      // Handle company logo separately if needed
+      setCompanyLogo(files[0])
     } else if (type === 'additional') {
       setAdditionalMedia(prev => [...prev, ...Array.from(files)])
     }
   }
 
-  const removeFile = (type: 'featuredImage' | 'featuredVideo' | 'additional', index?: number) => {
+  const removeFile = (type: 'featuredImage' | 'featuredVideo' | 'additional' | 'companyLogo', index?: number) => {
     if (type === 'featuredImage') {
       setFeaturedImage(null)
     } else if (type === 'featuredVideo') {
       setFeaturedVideo(null)
+    } else if (type === 'companyLogo') {
+      setCompanyLogo(null)
     } else if (type === 'additional' && index !== undefined) {
       setAdditionalMedia(prev => prev.filter((_, i) => i !== index))
     }
@@ -136,7 +138,7 @@ export default function NewCaseStudy() {
         const caseStudy = await response.json()
 
         // If there are files to upload, upload them
-        if (featuredImage || featuredVideo || additionalMedia.length > 0) {
+        if (featuredImage || featuredVideo || companyLogo || additionalMedia.length > 0) {
           const formData = new FormData()
           
           if (featuredImage) {
@@ -145,6 +147,10 @@ export default function NewCaseStudy() {
           
           if (featuredVideo) {
             formData.append('featuredVideo', featuredVideo)
+          }
+          
+          if (companyLogo) {
+            formData.append('companyLogo', companyLogo)
           }
           
           additionalMedia.forEach((file) => {
@@ -451,20 +457,50 @@ export default function NewCaseStudy() {
                     <h3 className="text-lg font-semibold text-slate-900">Media Content</h3>
                   </div>
 
-                  {/* Company Logo */}
+                  {/* Company Logo Upload */}
                   <div className="mb-6">
-                    <label htmlFor="companyLogo" className="block text-sm font-medium text-slate-700 mb-2">
-                      Company Logo URL
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Company Logo *
                     </label>
-                    <input
-                      type="url"
-                      id="companyLogo"
-                      name="companyLogo"
-                      value={formData.companyLogo}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none"
-                      placeholder="https://example.com/logo.png"
-                    />
+                    {!companyLogo ? (
+                      <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center">
+                        <ImageIcon className="mx-auto h-8 w-8 text-slate-400 mb-2" />
+                        <div className="space-y-2">
+                          <p className="text-slate-600 text-sm">Upload company logo</p>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleFileUpload(e, 'companyLogo')}
+                            className="hidden"
+                            id="company-logo"
+                            required
+                          />
+                          <label
+                            htmlFor="company-logo"
+                            className="inline-flex items-center px-3 py-1.5 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 cursor-pointer"
+                          >
+                            <Upload className="w-4 h-4 mr-2" />
+                            Choose Logo
+                          </label>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <img
+                          src={URL.createObjectURL(companyLogo)}
+                          alt="Company Logo"
+                          className="w-20 h-20 object-contain rounded-lg border border-slate-200 bg-white p-2"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeFile('companyLogo')}
+                          className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                        <p className="mt-2 text-sm text-slate-600">{companyLogo.name}</p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Featured Image Upload - for IMAGE_ONLY and IMAGE_AND_VIDEO */}
