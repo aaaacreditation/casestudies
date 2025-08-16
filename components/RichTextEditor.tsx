@@ -43,7 +43,7 @@ export default function RichTextEditor({
         onChange={(val) => onChange(val || '')}
         preview="edit"
         hideToolbar={false}
-        visibleDragBar={false}
+        visibleDragbar={false}
         textareaProps={{
           placeholder,
           required,
