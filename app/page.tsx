@@ -29,6 +29,8 @@ const useWindowSize = () => {
   })
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    
     const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight })
 
     window.addEventListener("resize", handleResize)
@@ -235,9 +237,11 @@ export default function Home() {
         <div className="absolute right-6 top-6 z-20">
           <button
             onClick={() => {
-              const customerStoriesSection = document.getElementById('customer-stories');
-              if (customerStoriesSection) {
-                customerStoriesSection.scrollIntoView({ behavior: 'smooth' });
+              if (typeof document !== 'undefined') {
+                const customerStoriesSection = document.getElementById('customer-stories');
+                if (customerStoriesSection) {
+                  customerStoriesSection.scrollIntoView({ behavior: 'smooth' });
+                }
               }
             }}
             className="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
