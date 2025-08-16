@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { 
@@ -24,13 +24,7 @@ export default function CaseStudyMedia() {
   const [featuredVideo, setFeaturedVideo] = useState<File | null>(null)
   const [additionalMedia, setAdditionalMedia] = useState<File[]>([])
 
-  useEffect(() => {
-    if (params.id) {
-      fetchCaseStudy()
-    }
-  }, [params.id, fetchCaseStudy])
-
-  const fetchCaseStudy = async () => {
+  const fetchCaseStudy = useCallback(async () => {
     try {
       const response = await fetch(`/api/case-studies/${params.id}`)
       if (response.ok) {
@@ -42,7 +36,13 @@ export default function CaseStudyMedia() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [params.id])
+
+  useEffect(() => {
+    if (params.id) {
+      fetchCaseStudy()
+    }
+  }, [params.id, fetchCaseStudy])
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'additional') => {
     const files = e.target.files
