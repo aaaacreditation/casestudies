@@ -102,23 +102,61 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
 
 
 
-              {/* Featured Image */}
-              {caseStudy.featuredImage && (
+              {/* Featured Media */}
+              {(caseStudy.featuredImage || caseStudy.featuredVideo) && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.3 }}
                   className="mb-12"
                 >
-                  <div className="relative h-96 rounded-2xl overflow-hidden shadow-lg">
-                    <Image
-                      src={caseStudy.featuredImage}
-                      alt={caseStudy.title}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                  </div>
+                  {caseStudy.mediaType === 'VIDEO_ONLY' && caseStudy.featuredVideo ? (
+                    <div className="relative h-96 rounded-2xl overflow-hidden shadow-lg">
+                      <video
+                        src={caseStudy.featuredVideo}
+                        controls
+                        className="w-full h-full object-cover"
+                        poster={caseStudy.featuredImage}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  ) : caseStudy.mediaType === 'IMAGE_AND_VIDEO' ? (
+                    <div className="space-y-6">
+                      {caseStudy.featuredImage && (
+                        <div className="relative h-96 rounded-2xl overflow-hidden shadow-lg">
+                          <Image
+                            src={caseStudy.featuredImage}
+                            alt={caseStudy.title}
+                            fill
+                            className="object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                        </div>
+                      )}
+                      {caseStudy.featuredVideo && (
+                        <div className="relative h-96 rounded-2xl overflow-hidden shadow-lg">
+                          <video
+                            src={caseStudy.featuredVideo}
+                            controls
+                            className="w-full h-full object-cover"
+                          >
+                            Your browser does not support the video tag.
+                          </video>
+                        </div>
+                      )}
+                    </div>
+                  ) : caseStudy.featuredImage ? (
+                    <div className="relative h-96 rounded-2xl overflow-hidden shadow-lg">
+                      <Image
+                        src={caseStudy.featuredImage}
+                        alt={caseStudy.title}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                    </div>
+                  ) : null}
                 </motion.div>
               )}
 

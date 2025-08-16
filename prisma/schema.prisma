@@ -32,28 +32,52 @@ model Company {
   @@map("companies")
 }
 
+enum MediaType {
+  IMAGE_ONLY
+  VIDEO_ONLY
+  IMAGE_AND_VIDEO
+}
+
 model CaseStudy {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   title         String
   subtitle      String?
-  slug          String   @unique
-  content       String   // Rich text content
-  excerpt       String   // Short description for cards
+  slug          String    @unique
+  content       String    // Rich text content
+  excerpt       String    // Short description for cards
   featuredImage String?
-  tags          String[] // e.g., ["Technology", "Growth", "Efficiency"]
-  metrics       Json?    // Key metrics like "86% more insights", "48+ hours saved"
-  published     Boolean  @default(false)
-  featured      Boolean  @default(false)
-  readTime      Int?     // Reading time in minutes
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  featuredVideo String?   // Video URL or file path
+  mediaType     MediaType @default(IMAGE_ONLY)
+  tags          String[]  // e.g., ["Technology", "Growth", "Efficiency"]
+  metrics       Json?     // Key metrics like "86% more insights", "48+ hours saved"
+  published     Boolean   @default(false)
+  featured      Boolean   @default(false)
+  readTime      Int?      // Reading time in minutes
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   companyId String
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   testimonials Testimonial[]
+  media        Media[]
 
   @@map("case_studies")
+}
+
+model Media {
+  id          String    @id @default(cuid())
+  url         String    // File path or URL
+  type        String    // 'image' or 'video'
+  filename    String
+  size        Int?      // File size in bytes
+  mimetype    String
+  createdAt   DateTime  @default(now())
+
+  caseStudyId String
+  caseStudy   CaseStudy @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
+
+  @@map("media")
 }
 
 model Testimonial {
@@ -73,4 +97,60 @@ model Testimonial {
   caseStudy   CaseStudy? @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
 
   @@map("testimonials")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?   // For credentials login
+  image         String?
+  role          String    @default("USER") // USER, ADMIN
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
 }

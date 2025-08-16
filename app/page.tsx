@@ -12,73 +12,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { CaseStudy, FilterOptions } from '@/types'
 
-// Mock data - replace with actual API calls
-const mockCaseStudies: CaseStudy[] = [
-  {
-    id: '1',
-    title: "Atlassian's AI edge for customer-led growth",
-    subtitle: "How Atlassian leveraged customer insights to drive product decisions",
-    slug: 'atlassian-ai-customer-growth',
-    content: 'Full case study content...',
-    excerpt: 'Whenever someone comes and brings the customer insight, that really wins the discussion—because it really reflects what our customers think and how they act.',
-    featuredImage: 'https://plus.unsplash.com/premium_photo-1661337299739-42a43d7fe618?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OXx8dGVzdGltb25pYWx8ZW58MHx8MHx8fDA%3D',
-    tags: [],
-    metrics: {
-      'insights_shared': '86% more customer insights shared',
-      'time_saved': '48+ hours saved per week'
-    },
-    published: true,
-    featured: true,
-    readTime: 5,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    companyId: '1',
-    company: {
-      id: '1',
-      name: 'Atlassian',
-      logo: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8bG9nb3xlbnwwfHwwfHx8MA%3D%3D',
-      website: 'https://atlassian.com',
-      industry: 'Healthcare',
-      location: 'Australia',
-      size: '12,000+',
-      description: 'Software development and collaboration tools',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-  },
-  {
-    id: '2',
-    title: "How customer insights power Breville's product innovation",
-    subtitle: "Breville combines everything into one single place for customer data analysis",
-    slug: 'breville-product-innovation',
-    content: 'Full case study content...',
-    excerpt: 'At Breville, we previously used multiple programs and platforms to gather and analyze customer data. Now we have everything in one single place.',
-    featuredImage: 'https://images.unsplash.com/photo-1713946598467-fcf9332c56ea?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fHNtaWxlJTIwcHJvZmVzc2lvbmFsfGVufDB8fDB8fHww',
-    tags: [],
-    metrics: {
-      'efficiency': '94% increase in insight quality',
-      'consolidation': 'Unified 5 platforms into 1'
-    },
-    published: true,
-    featured: false,
-    readTime: 4,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    companyId: '2',
-    company: {
-      id: '2',
-      name: 'Breville',
-      logo: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8bG9nb3xlbnwwfHwwfHx8MA%3D%3D',
-      website: 'https://breville.com',
-      industry: 'Training/Education',
-      location: 'United Kingdom',
-      size: '1,000+',
-      description: 'Kitchen appliances and coffee machines',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-  }
-]
+
 
 
 
@@ -204,10 +138,34 @@ const HeroBeams = () => {
 }
 
 export default function Home() {
-  const [caseStudies] = useState<CaseStudy[]>(mockCaseStudies)
-  const [filteredCaseStudies, setFilteredCaseStudies] = useState<CaseStudy[]>(mockCaseStudies)
+  const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([])
+  const [filteredCaseStudies, setFilteredCaseStudies] = useState<CaseStudy[]>([])
   const [filters, setFilters] = useState<FilterOptions>({})
   const [searchQuery, setSearchQuery] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  // Fetch case studies from API
+  useEffect(() => {
+    const fetchCaseStudies = async () => {
+      try {
+        const response = await fetch('/api/case-studies')
+        if (response.ok) {
+          const data = await response.json()
+          const publishedCaseStudies = data.filter((cs: CaseStudy) => cs.published)
+          setCaseStudies(publishedCaseStudies)
+          setFilteredCaseStudies(publishedCaseStudies)
+    } else {
+          console.warn('Failed to fetch case studies from API')
+        }
+      } catch (error) {
+        console.error('Error fetching case studies:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCaseStudies()
+  }, [])
 
 
   // Extract available filter options from case studies
@@ -248,14 +206,14 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-white">
         {/* Very Light Grid Background */}
-        <motion.div
+          <motion.div
           initial={{
             opacity: 0,
           }}
-          animate={{
+            animate={{
             opacity: 1,
-          }}
-          transition={{
+            }}
+            transition={{
             duration: 2.5,
             ease: "easeInOut",
           }}
@@ -306,9 +264,9 @@ export default function Home() {
           >
             <div className="mb-6 inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
               Customer Success
-            </div>
+        </div>
 
-            <motion.h1
+              <motion.h1 
               initial={{
                 y: 60,
                 opacity: 0,
@@ -323,21 +281,21 @@ export default function Home() {
                 ease: "easeInOut",
               }}
               className="text-4xl font-extrabold leading-[1.05] tracking-tight text-slate-900 sm:text-6xl md:text-7xl"
-            >
-              Customer Success
+              >
+                Customer Success
               <br className="hidden sm:block" /> Stories
-            </motion.h1>
+              </motion.h1>
 
             <motion.p
               initial={{
                 y: 40,
                 opacity: 0,
               }}
-              animate={{
+                  animate={{
                 y: 0,
                 opacity: 1,
-              }}
-              transition={{
+                  }}
+                  transition={{
                 duration: 1.5,
                 delay: 0.6,
                 ease: "easeInOut",
@@ -346,20 +304,20 @@ export default function Home() {
             >
               Get inspired, learn and read firsthand feedback from teams around the globe on how they are getting value from our platform.
             </motion.p>
-          </motion.div>
+            </motion.div>
 
           {/* Right Column: Metrics */}
-          <motion.div
+            <motion.div
             initial={{
               y: 50,
               opacity: 0,
             }}
-            animate={{
+                  animate={{
               y: 0,
               opacity: 1,
-            }}
-            transition={{
-              duration: 1.5,
+                  }}
+                  transition={{
+                    duration: 1.5,
               delay: 0.9,
               ease: "easeInOut",
             }}
@@ -391,7 +349,7 @@ export default function Home() {
                 </p>
               </li>
             </ul>
-          </motion.div>
+            </motion.div>
         </div>
       </section>
 
@@ -502,6 +460,21 @@ export default function Home() {
           </div>
 
           {/* Case Studies Grid */}
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse">
+                  <div className="h-48 bg-slate-200"></div>
+                  <div className="p-6">
+                    <div className="h-4 bg-slate-200 rounded mb-2"></div>
+                    <div className="h-4 bg-slate-200 rounded w-3/4 mb-4"></div>
+                    <div className="h-3 bg-slate-200 rounded mb-2"></div>
+                    <div className="h-3 bg-slate-200 rounded w-2/3"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                                     {filteredCaseStudies.map((caseStudy) => (
               <CaseStudyCard
@@ -510,6 +483,7 @@ export default function Home() {
               />
             ))}
           </div>
+          )}
 
           {/* No Results */}
           {filteredCaseStudies.length === 0 && (

@@ -141,6 +141,8 @@ exports.Prisma.CaseStudyScalarFieldEnum = {
   content: 'content',
   excerpt: 'excerpt',
   featuredImage: 'featuredImage',
+  featuredVideo: 'featuredVideo',
+  mediaType: 'mediaType',
   tags: 'tags',
   metrics: 'metrics',
   published: 'published',
@@ -149,6 +151,17 @@ exports.Prisma.CaseStudyScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   companyId: 'companyId'
+};
+
+exports.Prisma.MediaScalarFieldEnum = {
+  id: 'id',
+  url: 'url',
+  type: 'type',
+  filename: 'filename',
+  size: 'size',
+  mimetype: 'mimetype',
+  createdAt: 'createdAt',
+  caseStudyId: 'caseStudyId'
 };
 
 exports.Prisma.TestimonialScalarFieldEnum = {
@@ -162,6 +175,46 @@ exports.Prisma.TestimonialScalarFieldEnum = {
   updatedAt: 'updatedAt',
   companyId: 'companyId',
   caseStudyId: 'caseStudyId'
+};
+
+exports.Prisma.UserScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  email: 'email',
+  emailVerified: 'emailVerified',
+  password: 'password',
+  image: 'image',
+  role: 'role',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.AccountScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  type: 'type',
+  provider: 'provider',
+  providerAccountId: 'providerAccountId',
+  refresh_token: 'refresh_token',
+  access_token: 'access_token',
+  expires_at: 'expires_at',
+  token_type: 'token_type',
+  scope: 'scope',
+  id_token: 'id_token',
+  session_state: 'session_state'
+};
+
+exports.Prisma.SessionScalarFieldEnum = {
+  id: 'id',
+  sessionToken: 'sessionToken',
+  userId: 'userId',
+  expires: 'expires'
+};
+
+exports.Prisma.VerificationTokenScalarFieldEnum = {
+  identifier: 'identifier',
+  token: 'token',
+  expires: 'expires'
 };
 
 exports.Prisma.SortOrder = {
@@ -189,12 +242,21 @@ exports.Prisma.JsonNullValueFilter = {
   JsonNull: Prisma.JsonNull,
   AnyNull: Prisma.AnyNull
 };
-
+exports.MediaType = exports.$Enums.MediaType = {
+  IMAGE_ONLY: 'IMAGE_ONLY',
+  VIDEO_ONLY: 'VIDEO_ONLY',
+  IMAGE_AND_VIDEO: 'IMAGE_AND_VIDEO'
+};
 
 exports.Prisma.ModelName = {
   Company: 'Company',
   CaseStudy: 'CaseStudy',
-  Testimonial: 'Testimonial'
+  Media: 'Media',
+  Testimonial: 'Testimonial',
+  User: 'User',
+  Account: 'Account',
+  Session: 'Session',
+  VerificationToken: 'VerificationToken'
 };
 
 /**
