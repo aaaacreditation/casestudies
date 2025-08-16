@@ -5,6 +5,13 @@ import { ArrowLeft, MapPin, Users, Share2, ExternalLink } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { CaseStudy } from '@/types'
+import dynamic from 'next/dynamic'
+
+// Dynamically import the markdown viewer to avoid SSR issues
+const MDEditor = dynamic(
+  () => import('@uiw/react-md-editor').then((mod) => ({ default: mod.default.Markdown })),
+  { ssr: false }
+)
 
 // Helper function to extract YouTube video ID from URL
 function getYouTubeVideoId(url: string): string | null {
@@ -197,53 +204,22 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                 transition={{ duration: 0.6, delay: 0.4 }}
                 className="prose prose-lg max-w-none"
               >
-                {/* Challenge Section */}
-                <div className="bg-red-50 border border-red-100 rounded-2xl p-8 mb-8">
-                  <h2 className="text-2xl font-bold text-red-900 mb-4 flex items-center gap-3">
-                    <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                      1
-                    </div>
-                    The Challenge
-                  </h2>
-                  <p className="text-red-800 leading-relaxed text-lg">
-                    {caseStudy.company.name} faced significant challenges in managing and analyzing customer feedback across multiple platforms. 
-                    The scattered data made it difficult to extract actionable insights and make informed product decisions.
-                  </p>
+                {/* Dynamic Content from Editor */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-8 mb-8">
+                  <MDEditor 
+                    source={caseStudy.content} 
+                    style={{ 
+                      backgroundColor: 'transparent',
+                      color: '#334155'
+                    }}
+                  />
                 </div>
 
-                {/* Solution Section */}
-                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-8 mb-8">
-                  <h2 className="text-2xl font-bold text-blue-900 mb-4 flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                      2
-                    </div>
-                    The Solution
-                  </h2>
-                  <p className="text-blue-800 leading-relaxed text-lg mb-4">
-                    By implementing our comprehensive customer insights platform, {caseStudy.company.name} was able to:
-                  </p>
-                  <ul className="text-blue-800 space-y-2">
-                    <li>• Consolidate all customer feedback into a single, unified dashboard</li>
-                    <li>• Apply AI-powered analysis to identify trends and patterns</li>
-                    <li>• Generate automated reports and actionable recommendations</li>
-                    <li>• Enable real-time collaboration across teams</li>
-                  </ul>
-                </div>
-
-                {/* Results Section */}
-                <div className="bg-green-50 border border-green-100 rounded-2xl p-8 mb-8">
-                  <h2 className="text-2xl font-bold text-green-900 mb-4 flex items-center gap-3">
-                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                      3
-                    </div>
-                    The Results
-                  </h2>
-                  <p className="text-green-800 leading-relaxed text-lg mb-6">
-                    The implementation delivered remarkable results across key performance indicators:
-                  </p>
-                  
-                  {caseStudy.metrics && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {/* Metrics Section */}
+                {caseStudy.metrics && (
+                  <div className="bg-green-50 border border-green-100 rounded-2xl p-8 mb-8">
+                    <h2 className="text-2xl font-bold text-green-900 mb-6">Key Results</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {Object.entries(caseStudy.metrics).map(([key, value]) => (
                         <div key={key} className="bg-white rounded-xl p-4 border border-green-200">
                           <div className="text-2xl font-bold text-green-600 mb-1">{value}</div>
@@ -251,8 +227,8 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                         </div>
                       ))}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {/* Quote Section */}
                 <div className="bg-slate-100 border-l-4 border-[#0a4373] rounded-r-2xl p-8 mb-8">
@@ -307,20 +283,7 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                   </div>
                 </div>
 
-                {/* Tags */}
-                <div className="bg-white rounded-2xl p-6 border border-slate-200">
-                  <h3 className="text-lg font-bold text-slate-900 mb-4">Tags</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {caseStudy.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="bg-[#0a4373]/10 text-[#0a4373] px-3 py-1 rounded-full text-sm font-medium"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+
 
                 {/* CTA */}
                 <div className="bg-gradient-to-br from-[#0a4373] to-[#083455] rounded-2xl p-6 text-white">

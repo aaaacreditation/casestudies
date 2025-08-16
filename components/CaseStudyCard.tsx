@@ -17,7 +17,7 @@ export default function CaseStudyCard({ caseStudy, index = 0 }: CaseStudyCardPro
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: index * 0.1 }}
-      className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-slate-100 hover:border-[#0a4373]/30 hover:-translate-y-2 max-w-sm mx-auto"
+      className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-slate-100 hover:border-[#0a4373]/30 hover:-translate-y-2 w-full"
     >
       {/* Compact Header with Company Info */}
       <div className="p-5">
@@ -54,13 +54,13 @@ export default function CaseStudyCard({ caseStudy, index = 0 }: CaseStudyCardPro
           </div>
         </div>
 
-        {/* Case Study Title - Compact */}
-        <h2 className="text-lg font-bold text-slate-900 mb-3 group-hover:text-[#0a4373] transition-colors leading-tight line-clamp-2">
+        {/* Case Study Title - Better sized */}
+        <h2 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-[#0a4373] transition-colors leading-tight line-clamp-2">
           {caseStudy.title}
         </h2>
 
-        {/* Excerpt - Shorter */}
-        <p className="text-slate-600 mb-4 line-clamp-2 text-sm leading-relaxed">{caseStudy.excerpt}</p>
+        {/* Excerpt - Better sized */}
+        <p className="text-slate-600 mb-4 line-clamp-3 text-base leading-relaxed">{caseStudy.excerpt}</p>
 
         {/* Metrics - Compact */}
         {caseStudy.metrics && (
@@ -74,9 +74,9 @@ export default function CaseStudyCard({ caseStudy, index = 0 }: CaseStudyCardPro
         )}
       </div>
 
-      {/* Featured Image - Smaller and Inset */}
+      {/* Featured Image - Better sized */}
       {caseStudy.featuredImage && (
-        <div className="relative h-32 overflow-hidden mx-5 rounded-xl mb-4">
+        <div className="relative h-48 overflow-hidden mx-5 rounded-xl mb-4">
           <Image
             src={caseStudy.featuredImage}
             alt={caseStudy.title}

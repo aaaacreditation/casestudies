@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { MediaType } from '@/types'
+import RichTextEditor from '@/components/RichTextEditor'
 
 interface MediaTypeOption {
   value: MediaType
@@ -63,7 +64,6 @@ export default function NewCaseStudy() {
     companySize: '',
     companyWebsite: '',
     companyDescription: '',
-    tags: '',
     metrics: '',
     published: false,
     featured: false,
@@ -121,7 +121,7 @@ export default function NewCaseStudy() {
       const caseStudyData = {
         ...formData,
         mediaType: selectedMediaType,
-        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+        tags: [], // Empty tags array since we removed the tags field
         metrics: formData.metrics ? JSON.parse(formData.metrics) : null,
         featuredVideo: formData.featuredVideoUrl || undefined
       }
@@ -323,14 +323,10 @@ export default function NewCaseStudy() {
                     <label htmlFor="content" className="block text-sm font-medium text-slate-700 mb-2">
                       Content *
                     </label>
-                    <textarea
-                      id="content"
-                      name="content"
+                    <RichTextEditor
                       value={formData.content}
-                      onChange={handleInputChange}
-                      rows={8}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none"
-                      placeholder="Full case study content"
+                      onChange={(value) => setFormData(prev => ({ ...prev, content: value }))}
+                      placeholder="Enter the full case study content here..."
                       required
                     />
                   </div>
@@ -692,23 +688,7 @@ export default function NewCaseStudy() {
                   <h3 className="text-lg font-semibold text-slate-900">Additional Information</h3>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="tags" className="block text-sm font-medium text-slate-700 mb-2">
-                      Tags
-                    </label>
-                    <input
-                      type="text"
-                      id="tags"
-                      name="tags"
-                      value={formData.tags}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none"
-                      placeholder="tag1, tag2, tag3"
-                    />
-                    <p className="text-xs text-slate-500 mt-1">Separate tags with commas</p>
-                  </div>
-
+                <div className="grid grid-cols-1 gap-6">
                   <div>
                     <label htmlFor="metrics" className="block text-sm font-medium text-slate-700 mb-2">
                       Metrics (JSON)

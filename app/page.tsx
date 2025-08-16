@@ -465,7 +465,7 @@ export default function Home() {
 
           {/* Case Studies Grid */}
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse">
                   <div className="h-48 bg-slate-200"></div>
@@ -479,7 +479,7 @@ export default function Home() {
               ))}
             </div>
           ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                     {filteredCaseStudies.map((caseStudy) => (
               <CaseStudyCard
                 key={caseStudy.id}
