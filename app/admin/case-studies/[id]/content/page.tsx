@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { 
   ArrowLeft, 
   Save, 
-  Plus,
   GripVertical,
   Trash2,
   Type,
@@ -27,21 +26,12 @@ import RichTextEditor from '@/components/RichTextEditor'
 import {
   DndContext,
   DragEndEvent,
-  DragOverEvent,
   DragOverlay,
-  DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
-  closestCorners,
-  useDroppable
+  closestCorners
 } from '@dnd-kit/core'
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 
 // Content Block Types
 interface ContentBlock {
@@ -100,13 +90,7 @@ export default function EditCaseStudyContent() {
     })
   )
 
-  useEffect(() => {
-    if (params.id) {
-      fetchCaseStudy()
-    }
-  }, [params.id])
-
-  const fetchCaseStudy = async () => {
+  const fetchCaseStudy = useCallback(async () => {
     try {
       const response = await fetch(`/api/case-studies/${params.id}`)
       if (response.ok) {
@@ -153,7 +137,13 @@ export default function EditCaseStudyContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [params.id, router])
+
+  useEffect(() => {
+    if (params.id) {
+      fetchCaseStudy()
+    }
+  }, [params.id, fetchCaseStudy])
 
   // Content Block Management
   const addContentBlock = (type: 'text' | 'image' | 'video' | 'title') => {
@@ -765,7 +755,7 @@ export default function EditCaseStudyContent() {
                         onDrop={(e) => {
                           e.preventDefault()
                           const blockId = e.dataTransfer.getData('text/plain')
-                          handleDragEnd({ active: { id: blockId }, over: { id: column.id } } as any)
+                          handleDragEnd({ active: { id: blockId }, over: { id: column.id } } as DragEndEvent)
                         }}
                         onDragOver={(e) => e.preventDefault()}
                       >

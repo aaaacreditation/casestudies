@@ -111,9 +111,9 @@ export async function POST(
           // Update blocks in layout columns
           const updatedLayout = {
             ...contentData.layout,
-            columns: contentData.layout.columns.map((col: any) => ({
+            columns: contentData.layout.columns.map((col: { id: string; blocks: { id: string; [key: string]: unknown }[] }) => ({
               ...col,
-              blocks: col.blocks.map((block: any) => {
+              blocks: col.blocks.map((block: { id: string; [key: string]: unknown }) => {
                 if (contentBlockFiles[block.id]) {
                   return { ...block, fileUrl: contentBlockFiles[block.id] }
                 }
@@ -123,7 +123,7 @@ export async function POST(
           }
           
           // Update available blocks
-          const updatedAvailableBlocks = (contentData.availableBlocks || []).map((block: any) => {
+          const updatedAvailableBlocks = (contentData.availableBlocks || []).map((block: { id: string; [key: string]: unknown }) => {
             if (contentBlockFiles[block.id]) {
               return { ...block, fileUrl: contentBlockFiles[block.id] }
             }
@@ -137,7 +137,7 @@ export async function POST(
         } 
         // Handle legacy format (array of blocks)
         else if (Array.isArray(contentData)) {
-          const updatedBlocks = contentData.map((block: any) => {
+          const updatedBlocks = contentData.map((block: { id: string; [key: string]: unknown }) => {
             if (contentBlockFiles[block.id]) {
               return { ...block, fileUrl: contentBlockFiles[block.id] }
             }

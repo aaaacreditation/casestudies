@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Save, Eye, Edit, X, Plus } from 'lucide-react'
@@ -32,9 +32,9 @@ export default function EditCaseStudy() {
     if (params.id) {
       fetchCaseStudy()
     }
-  }, [params.id])
+  }, [params.id, fetchCaseStudy])
 
-  const fetchCaseStudy = async () => {
+  const fetchCaseStudy = useCallback(async () => {
     try {
       const response = await fetch(`/api/case-studies/${params.id}`)
       if (response.ok) {
@@ -64,7 +64,7 @@ export default function EditCaseStudy() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [params.id, router])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -170,7 +170,7 @@ export default function EditCaseStudy() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-semibold text-slate-900 mb-2">Case Study Not Found</h2>
-          <p className="text-slate-600 mb-4">The case study you're looking for doesn't exist.</p>
+          <p className="text-slate-600 mb-4">The case study you&apos;re looking for doesn&apos;t exist.</p>
           <Link
             href="/admin/dashboard"
             className="inline-flex items-center px-4 py-2 bg-[#0a4373] text-white rounded-lg hover:bg-[#083455] transition-colors"
