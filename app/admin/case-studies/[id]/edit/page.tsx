@@ -28,12 +28,6 @@ export default function EditCaseStudy() {
   })
 
 
-  useEffect(() => {
-    if (params.id) {
-      fetchCaseStudy()
-    }
-  }, [params.id, fetchCaseStudy])
-
   const fetchCaseStudy = useCallback(async () => {
     try {
       const response = await fetch(`/api/case-studies/${params.id}`)
@@ -65,6 +59,12 @@ export default function EditCaseStudy() {
       setLoading(false)
     }
   }, [params.id, router])
+
+  useEffect(() => {
+    if (params.id) {
+      fetchCaseStudy()
+    }
+  }, [params.id, fetchCaseStudy])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
