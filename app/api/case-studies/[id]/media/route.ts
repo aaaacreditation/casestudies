@@ -37,7 +37,7 @@ export async function POST(
       )
     }
 
-    const updateData: { featuredImage?: string; featuredVideo?: string } = {}
+    const updateData: { featuredImage?: string; featuredVideo?: string; content?: string } = {}
     const companyUpdateData: { logo?: string } = {}
 
     // Handle featured image
