@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
+import { uploadToCloudinary } from '@/lib/cloudinary'
 
 export async function POST(
   request: NextRequest,
@@ -22,10 +21,6 @@ export async function POST(
     const { id } = await params
     const formData = await request.formData()
 
-    // Ensure uploads directory exists
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'case-studies', id)
-    await mkdir(uploadsDir, { recursive: true })
-
     const caseStudy = await prisma.caseStudy.findUnique({
       where: { id }
     })
@@ -42,41 +37,47 @@ export async function POST(
 
     // Handle featured image
     const featuredImage = formData.get('featuredImage') as File
-    if (featuredImage) {
-      const bytes = await featuredImage.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-      
-      const filename = `featured-image-${Date.now()}.${featuredImage.name.split('.').pop()}`
-      const filepath = join(uploadsDir, filename)
-      
-      await writeFile(filepath, buffer)
-      updateData.featuredImage = `/uploads/case-studies/${id}/${filename}`
+    if (featuredImage && featuredImage.size > 0) {
+      try {
+        const imageUrl = await uploadToCloudinary(featuredImage, `case-studies/${id}/featured`)
+        updateData.featuredImage = imageUrl
+      } catch (error) {
+        console.error('Error uploading featured image:', error)
+        return NextResponse.json(
+          { error: 'Failed to upload featured image' },
+          { status: 500 }
+        )
+      }
     }
 
     // Handle featured video
     const featuredVideo = formData.get('featuredVideo') as File
-    if (featuredVideo) {
-      const bytes = await featuredVideo.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-      
-      const filename = `featured-video-${Date.now()}.${featuredVideo.name.split('.').pop()}`
-      const filepath = join(uploadsDir, filename)
-      
-      await writeFile(filepath, buffer)
-      updateData.featuredVideo = `/uploads/case-studies/${id}/${filename}`
+    if (featuredVideo && featuredVideo.size > 0) {
+      try {
+        const videoUrl = await uploadToCloudinary(featuredVideo, `case-studies/${id}/featured`)
+        updateData.featuredVideo = videoUrl
+      } catch (error) {
+        console.error('Error uploading featured video:', error)
+        return NextResponse.json(
+          { error: 'Failed to upload featured video' },
+          { status: 500 }
+        )
+      }
     }
 
     // Handle company logo
     const companyLogo = formData.get('companyLogo') as File
-    if (companyLogo) {
-      const bytes = await companyLogo.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-      
-      const filename = `company-logo-${Date.now()}.${companyLogo.name.split('.').pop()}`
-      const filepath = join(uploadsDir, filename)
-      
-      await writeFile(filepath, buffer)
-      companyUpdateData.logo = `/uploads/case-studies/${id}/${filename}`
+    if (companyLogo && companyLogo.size > 0) {
+      try {
+        const logoUrl = await uploadToCloudinary(companyLogo, `case-studies/${id}/company`)
+        companyUpdateData.logo = logoUrl
+      } catch (error) {
+        console.error('Error uploading company logo:', error)
+        return NextResponse.json(
+          { error: 'Failed to upload company logo' },
+          { status: 500 }
+        )
+      }
     }
 
     // Handle content block files
@@ -89,14 +90,13 @@ export async function POST(
         const blockId = formData.get(`contentBlockId_${index}`) as string
         
         if (blockId) {
-          const bytes = await value.arrayBuffer()
-          const buffer = Buffer.from(bytes)
-          
-          const filename = `block-${blockId}-${Date.now()}.${value.name.split('.').pop()}`
-          const filepath = join(uploadsDir, filename)
-          
-          await writeFile(filepath, buffer)
-          contentBlockFiles[blockId] = `/uploads/case-studies/${id}/${filename}`
+          try {
+            const fileUrl = await uploadToCloudinary(value, `case-studies/${id}/content`)
+            contentBlockFiles[blockId] = fileUrl
+          } catch (error) {
+            console.error(`Error uploading content block file for ${blockId}:`, error)
+            // Continue with other files instead of failing completely
+          }
         }
       }
     }
