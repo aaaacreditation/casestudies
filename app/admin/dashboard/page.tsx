@@ -64,6 +64,29 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleStatusToggle = async (id: string, currentStatus: boolean) => {
+    try {
+      const response = await fetch(`/api/case-studies/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          published: !currentStatus
+        })
+      })
+
+      if (response.ok) {
+        const updatedCaseStudy = await response.json()
+        setCaseStudies(caseStudies.map(cs => 
+          cs.id === id ? updatedCaseStudy : cs
+        ))
+      }
+    } catch (error) {
+      console.error('Error updating case study status:', error)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
@@ -264,16 +287,23 @@ export default function AdminDashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          caseStudy.published 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        <button
+                          onClick={() => handleStatusToggle(caseStudy.id, caseStudy.published)}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors hover:opacity-80 ${
+                            caseStudy.published 
+                              ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                              : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                          }`}
+                        >
                           {caseStudy.published ? 'Published' : 'Draft'}
-                        </span>
+                        </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                        {new Date(caseStudy.createdAt).toLocaleDateString()}
+                        {new Date(caseStudy.createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end gap-2">

@@ -25,6 +25,198 @@ function isYouTubeUrl(url: string): boolean {
   return url.includes('youtube.com') || url.includes('youtu.be')
 }
 
+// Content Block Types
+interface ContentBlock {
+  id: string
+  type: 'text' | 'image' | 'video' | 'title'
+  content?: string
+  url?: string
+  fileUrl?: string
+  caption?: string
+  titleLevel?: 1 | 2 | 3 | 4 | 5 | 6
+}
+
+// Layout Types
+interface LayoutColumn {
+  id: string
+  blocks: ContentBlock[]
+}
+
+interface Layout {
+  id: string
+  type: 1 | 2 | 3
+  columns: LayoutColumn[]
+}
+
+// Component to render content blocks
+function ContentBlocks({ content }: { content: string }) {
+  let structuredContent: { layout?: Layout; availableBlocks?: ContentBlock[] } = {}
+  
+  try {
+    structuredContent = JSON.parse(content || '{}')
+    // Debug log to see the content structure
+    console.log('Parsed content structure:', structuredContent)
+  } catch (error) {
+    console.error('Error parsing content:', error)
+    // Fallback to treating content as markdown
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 p-8">
+        <MDEditor 
+          source={content} 
+          style={{ 
+            backgroundColor: 'transparent',
+            color: '#334155'
+          }}
+        />
+      </div>
+    )
+  }
+
+  // Handle legacy content (array of blocks)
+  if (Array.isArray(structuredContent)) {
+    const contentBlocks = structuredContent as ContentBlock[]
+    return (
+      <>
+        {contentBlocks.map((block, index) => (
+          <ContentBlockRenderer key={block.id} block={block} index={index} />
+        ))}
+      </>
+    )
+  }
+
+  const { layout, availableBlocks } = structuredContent
+
+  if (!layout || layout.columns.every(col => col.blocks.length === 0)) {
+    // Check if there are available blocks but no layout - show them without warning for public view
+    if (availableBlocks && availableBlocks.length > 0) {
+      return (
+        <div className="space-y-6">
+          {availableBlocks.map((block, index) => (
+            <ContentBlockRenderer key={block.id} block={block} index={index} />
+          ))}
+        </div>
+      )
+    }
+    
+    // Only show "no content" if there's truly no content at all
+    return null
+  }
+
+  return (
+    <>
+      {/* Render Layout */}
+      <div className={`grid gap-6 ${
+        layout.type === 1 ? 'grid-cols-1' :
+        layout.type === 2 ? 'grid-cols-1 md:grid-cols-2' : 
+        'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+      }`}>
+        {layout.columns.map((column, columnIndex) => (
+          <div key={column.id} className="space-y-6">
+            {column.blocks.map((block, blockIndex) => (
+              <ContentBlockRenderer 
+                key={block.id} 
+                block={block} 
+                index={columnIndex * 10 + blockIndex} 
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+      
+      {/* Render Available Blocks (if any) */}
+      {availableBlocks && availableBlocks.length > 0 && (
+        <div className="mt-8 space-y-6">
+          <h3 className="text-lg font-semibold text-slate-700">Additional Content</h3>
+          {availableBlocks.map((block, index) => (
+            <ContentBlockRenderer key={block.id} block={block} index={index + 100} />
+          ))}
+        </div>
+      )}
+    </>
+  )
+}
+
+// Component to render individual content blocks
+function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: (index % 10) * 0.1 }}
+      className="bg-white rounded-2xl border border-slate-200 overflow-hidden"
+    >
+      {block.type === 'title' && block.content && (
+        <div className="p-8">
+          {block.titleLevel === 1 && <h1 className="text-4xl font-bold text-slate-800 leading-tight">{block.content}</h1>}
+          {block.titleLevel === 2 && <h2 className="text-3xl font-semibold text-slate-800 leading-tight">{block.content}</h2>}
+          {block.titleLevel === 3 && <h3 className="text-2xl font-medium text-slate-800 leading-tight">{block.content}</h3>}
+          {block.titleLevel === 4 && <h4 className="text-xl font-medium text-slate-800 leading-tight">{block.content}</h4>}
+          {block.titleLevel === 5 && <h5 className="text-lg font-medium text-slate-800 leading-tight">{block.content}</h5>}
+          {block.titleLevel === 6 && <h6 className="text-base font-medium text-slate-800 leading-tight">{block.content}</h6>}
+        </div>
+      )}
+
+      {block.type === 'text' && block.content && (
+        <div className="p-8">
+          <MDEditor 
+            source={block.content} 
+            style={{ 
+              backgroundColor: 'transparent',
+              color: '#334155'
+            }}
+          />
+        </div>
+      )}
+      
+      {block.type === 'image' && (block.fileUrl || block.url) && (
+        <div>
+          <div className="relative h-96">
+            <Image
+              src={block.fileUrl || block.url || ''}
+              alt={block.caption || 'Content image'}
+              fill
+              className="object-cover"
+            />
+          </div>
+          {block.caption && (
+            <div className="p-4 bg-slate-50 text-sm text-slate-600 text-center">
+              {block.caption}
+            </div>
+          )}
+        </div>
+      )}
+      
+      {block.type === 'video' && (
+        <div>
+          <div className="relative h-96">
+            {block.url && isYouTubeUrl(block.url) ? (
+              <iframe
+                src={`https://www.youtube.com/embed/${getYouTubeVideoId(block.url)}`}
+                className="w-full h-full"
+                allowFullScreen
+                title="YouTube video player"
+              />
+            ) : block.fileUrl ? (
+              <video
+                src={block.fileUrl}
+                controls
+                className="w-full h-full object-cover"
+              >
+                Your browser does not support the video tag.
+              </video>
+            ) : null}
+          </div>
+          {block.caption && (
+            <div className="p-4 bg-slate-50 text-sm text-slate-600 text-center">
+              {block.caption}
+            </div>
+          )}
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
 interface CaseStudyContentProps {
   caseStudy: CaseStudy
 }
@@ -204,15 +396,9 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                 transition={{ duration: 0.6, delay: 0.4 }}
                 className="prose prose-lg max-w-none"
               >
-                {/* Dynamic Content from Editor */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-8 mb-8">
-                  <MDEditor 
-                    source={caseStudy.content} 
-                    style={{ 
-                      backgroundColor: 'transparent',
-                      color: '#334155'
-                    }}
-                  />
+                {/* Dynamic Content Blocks */}
+                <div className="space-y-8 mb-8">
+                  <ContentBlocks content={caseStudy.content} />
                 </div>
 
                 {/* Metrics Section */}

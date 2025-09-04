@@ -79,32 +79,75 @@ export async function POST(
       companyUpdateData.logo = `/uploads/case-studies/${id}/${filename}`
     }
 
-    // Handle additional media
-    const additionalMediaFiles = formData.getAll('additionalMedia') as File[]
-    const mediaRecords = []
+    // Handle content block files
+    const contentBlockFiles: { [key: string]: string } = {}
+    
+    // Get all form data entries for content blocks
+    for (const [key, value] of formData.entries()) {
+      if (key.startsWith('contentBlock_') && value instanceof File && value.size > 0) {
+        const index = key.replace('contentBlock_', '')
+        const blockId = formData.get(`contentBlockId_${index}`) as string
+        
+        if (blockId) {
+          const bytes = await value.arrayBuffer()
+          const buffer = Buffer.from(bytes)
+          
+          const filename = `block-${blockId}-${Date.now()}.${value.name.split('.').pop()}`
+          const filepath = join(uploadsDir, filename)
+          
+          await writeFile(filepath, buffer)
+          contentBlockFiles[blockId] = `/uploads/case-studies/${id}/${filename}`
+        }
+      }
+    }
 
-    for (const file of additionalMediaFiles) {
-      if (file && file.size > 0) {
-        const bytes = await file.arrayBuffer()
-        const buffer = Buffer.from(bytes)
+    // Update case study content with file URLs
+    if (Object.keys(contentBlockFiles).length > 0) {
+      try {
+        const contentData = JSON.parse(caseStudy.content || '{}')
         
-        const filename = `${Date.now()}-${file.name}`
-        const filepath = join(uploadsDir, filename)
-        
-        await writeFile(filepath, buffer)
-        
-        const mediaRecord = await prisma.media.create({
-          data: {
-            url: `/uploads/case-studies/${id}/${filename}`,
-            type: file.type.startsWith('image/') ? 'image' : 'video',
-            filename: file.name,
-            size: file.size,
-            mimetype: file.type,
-            caseStudyId: id
+        // Handle new layout format
+        if (contentData.layout) {
+          // Update blocks in layout columns
+          const updatedLayout = {
+            ...contentData.layout,
+            columns: contentData.layout.columns.map((col: any) => ({
+              ...col,
+              blocks: col.blocks.map((block: any) => {
+                if (contentBlockFiles[block.id]) {
+                  return { ...block, fileUrl: contentBlockFiles[block.id] }
+                }
+                return block
+              })
+            }))
           }
-        })
-        
-        mediaRecords.push(mediaRecord)
+          
+          // Update available blocks
+          const updatedAvailableBlocks = (contentData.availableBlocks || []).map((block: any) => {
+            if (contentBlockFiles[block.id]) {
+              return { ...block, fileUrl: contentBlockFiles[block.id] }
+            }
+            return block
+          })
+          
+          updateData.content = JSON.stringify({
+            layout: updatedLayout,
+            availableBlocks: updatedAvailableBlocks
+          })
+        } 
+        // Handle legacy format (array of blocks)
+        else if (Array.isArray(contentData)) {
+          const updatedBlocks = contentData.map((block: any) => {
+            if (contentBlockFiles[block.id]) {
+              return { ...block, fileUrl: contentBlockFiles[block.id] }
+            }
+            return block
+          })
+          
+          updateData.content = JSON.stringify(updatedBlocks)
+        }
+      } catch (error) {
+        console.error('Error parsing content blocks:', error)
       }
     }
 
@@ -128,7 +171,7 @@ export async function POST(
 
     return NextResponse.json({
       caseStudy: updatedCaseStudy,
-      mediaRecords
+      contentBlockFiles
     })
   } catch (error) {
     console.error('Error uploading media:', error)

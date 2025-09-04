@@ -1,8 +1,39 @@
 import { PrismaClient } from '@/app/generated/prisma'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
 async function main() {
+  // Create admin user first
+  console.log('Creating admin user...')
+  const adminEmail = 'admin@casestudies.com'
+  const adminPassword = 'admin123'
+  
+  // Check if admin already exists
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: adminEmail }
+  })
+
+  if (!existingAdmin) {
+    // Hash password
+    const hashedPassword = await bcrypt.hash(adminPassword, 12)
+
+    // Create admin user
+    await prisma.user.create({
+      data: {
+        email: adminEmail,
+        password: hashedPassword,
+        name: 'Admin User',
+        role: 'ADMIN'
+      }
+    })
+    console.log('Admin user created successfully!')
+    console.log('Email:', adminEmail)
+    console.log('Password:', adminPassword)
+    console.log('⚠️  Please change the password after first login')
+  } else {
+    console.log('Admin user already exists')
+  }
   // Create companies
   const atlassian = await prisma.company.create({
     data: {
@@ -227,6 +258,12 @@ async function main() {
   })
 
   console.log('Database has been seeded successfully!')
+  console.log('')
+  console.log('🔑 Admin Login Credentials:')
+  console.log('Email: admin@casestudies.com')
+  console.log('Password: admin123')
+  console.log('Login URL: /admin/login')
+  console.log('⚠️  Please change the password after first login!')
 }
 
 main()
