@@ -21,6 +21,7 @@ import {
   Edit
 } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { CaseStudy } from '@/types'
 import RichTextEditor from '@/components/RichTextEditor'
 import {
@@ -71,6 +72,10 @@ export default function EditCaseStudyContent() {
   const [caseStudy, setCaseStudy] = useState<CaseStudy | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [featuredImage, setFeaturedImage] = useState<File | null>(null)
+  const [featuredImagePreview, setFeaturedImagePreview] = useState<string | null>(null)
+  const [companyLogo, setCompanyLogo] = useState<File | null>(null)
+  const [companyLogoPreview, setCompanyLogoPreview] = useState<string | null>(null)
 
   // Layout and content state
   const [currentLayout, setCurrentLayout] = useState<Layout>({
@@ -96,6 +101,14 @@ export default function EditCaseStudyContent() {
       if (response.ok) {
         const data = await response.json()
         setCaseStudy(data)
+        
+        // Set current image previews
+        if (data.featuredImage) {
+          setFeaturedImagePreview(data.featuredImage)
+        }
+        if (data.company?.logo) {
+          setCompanyLogoPreview(data.company.logo)
+        }
 
         // Parse and load content structure
         try {
@@ -284,6 +297,17 @@ export default function EditCaseStudyContent() {
         const uploadFormData = new FormData()
         let hasFiles = false
 
+        // Add featured image and logo
+        if (featuredImage) {
+          uploadFormData.append('featuredImage', featuredImage)
+          hasFiles = true
+        }
+        
+        if (companyLogo) {
+          uploadFormData.append('companyLogo', companyLogo)
+          hasFiles = true
+        }
+
         allBlocks.forEach((block, index) => {
           if (block.file) {
             uploadFormData.append(`contentBlock_${index}`, block.file)
@@ -387,6 +411,120 @@ export default function EditCaseStudyContent() {
               onDragEnd={handleDragEnd}
             >
               <div className="space-y-6">
+                {/* Featured Image & Logo Section */}
+                <div className="bg-white rounded-xl border border-slate-200 p-6">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-6">Featured Image & Company Logo</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Featured Image */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Featured Image
+                      </label>
+                      <div className="space-y-4">
+                        {featuredImagePreview && (
+                          <div className="relative">
+                            <div className="relative h-40 rounded-lg overflow-hidden border border-slate-200">
+                              <Image
+                                src={featuredImagePreview}
+                                alt="Featured image preview"
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFeaturedImage(null)
+                                setFeaturedImagePreview(null)
+                              }}
+                              className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+                        <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-[#0a4373] transition-colors">
+                          <ImageIcon className="mx-auto h-8 w-8 text-slate-400 mb-2" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) {
+                                setFeaturedImage(file)
+                                setFeaturedImagePreview(URL.createObjectURL(file))
+                              }
+                            }}
+                            className="hidden"
+                            id="featured-image-upload"
+                          />
+                          <label
+                            htmlFor="featured-image-upload"
+                            className="cursor-pointer text-sm text-slate-600 hover:text-[#0a4373]"
+                          >
+                            {featuredImagePreview ? 'Replace featured image' : 'Upload featured image'}
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Company Logo */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Company Logo
+                      </label>
+                      <div className="space-y-4">
+                        {companyLogoPreview && (
+                          <div className="relative">
+                            <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center">
+                              <Image
+                                src={companyLogoPreview}
+                                alt="Company logo preview"
+                                width={60}
+                                height={60}
+                                className="object-contain"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCompanyLogo(null)
+                                setCompanyLogoPreview(null)
+                              }}
+                              className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+                        <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-[#0a4373] transition-colors">
+                          <Upload className="mx-auto h-8 w-8 text-slate-400 mb-2" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) {
+                                setCompanyLogo(file)
+                                setCompanyLogoPreview(URL.createObjectURL(file))
+                              }
+                            }}
+                            className="hidden"
+                            id="company-logo-upload"
+                          />
+                          <label
+                            htmlFor="company-logo-upload"
+                            className="cursor-pointer text-sm text-slate-600 hover:text-[#0a4373]"
+                          >
+                            {companyLogoPreview ? 'Replace company logo' : 'Upload company logo'}
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Content Builder Header */}
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-slate-900">Content Builder</h3>
