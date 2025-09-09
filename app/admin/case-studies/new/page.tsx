@@ -319,21 +319,58 @@ interface DroppableColumnProps {
 }
 
 const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, blocks, onUpdate, onDelete }) => {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: column.id,
   })
+
+  const {
+    attributes: columnAttributes,
+    listeners: columnListeners,
+    setNodeRef: setSortableRef,
+    transform: columnTransform,
+    transition: columnTransition,
+    isDragging: isColumnDragging
+  } = useSortable({ 
+    id: `column-draggable-${column.id}`,
+    data: { type: 'column', column }
+  })
+
+  const columnStyle = {
+    transform: CSS.Transform.toString(columnTransform),
+    transition: columnTransition,
+    opacity: isColumnDragging ? 0.5 : 1
+  }
+
+  // Combine refs
+  const setNodeRef = (node: HTMLElement | null) => {
+    setDroppableRef(node)
+    setSortableRef(node)
+  }
 
   return (
     <div
       ref={setNodeRef}
+      style={columnStyle}
       className={`w-full min-h-[400px] border-2 border-dashed rounded-lg p-4 transition-colors ${
         isOver 
           ? 'border-[#0a4373] bg-[#0a4373]/5' 
+          : isColumnDragging
+          ? 'border-blue-300 bg-blue-50/50'
           : 'border-slate-200 bg-slate-50/50'
       }`}
     >
-      <div className="text-center text-sm text-slate-500 mb-4">
-        {blocks.length === 0 ? 'Drop content blocks here' : `Column ${column.id.split('-')[1]}`}
+      <div className="flex items-center justify-center mb-4">
+        <div
+          {...columnAttributes}
+          {...columnListeners}
+          className="cursor-grab active:cursor-grabbing p-2 hover:bg-slate-200 rounded-lg transition-colors"
+          title="Drag to reorder column"
+        >
+          <GripVertical className="w-4 h-4 text-slate-400" />
+        </div>
+        <div className="text-center text-sm text-slate-500 flex-1">
+          {blocks.length === 0 ? 'Drop content blocks here' : `Column ${column.id.split('-')[1]}`}
+        </div>
       </div>
       <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
         <div className="space-y-4">
@@ -771,6 +808,31 @@ export default function NewCaseStudy() {
     const activeId = active.id as string
     const overId = over.id as string
 
+    // Handle column reordering
+    if (activeId.startsWith('column-draggable-') && overId.startsWith('column-draggable-')) {
+      const activeColumnId = activeId.replace('column-draggable-', '')
+      const overColumnId = overId.replace('column-draggable-', '')
+      
+      if (activeColumnId !== overColumnId) {
+        setCurrentLayout(prev => {
+          const columns = [...prev.columns]
+          const activeIndex = columns.findIndex(col => col.id === activeColumnId)
+          const overIndex = columns.findIndex(col => col.id === overColumnId)
+          
+          if (activeIndex !== -1 && overIndex !== -1) {
+            const [movedColumn] = columns.splice(activeIndex, 1)
+            columns.splice(overIndex, 0, movedColumn)
+          }
+          
+          return {
+            ...prev,
+            columns
+          }
+        })
+      }
+      return
+    }
+
     const activeContainer = findContainer(activeId)
     const overContainer = findContainer(overId) || overId
 
@@ -1183,20 +1245,25 @@ export default function NewCaseStudy() {
                         {/* Layout Grid */}
                         <div className="bg-white border border-slate-200 rounded-lg p-4">
                           <h3 className="text-sm font-medium text-slate-700 mb-3">Layout Preview</h3>
-                          <div className={`grid gap-4 items-start ${
-                            currentLayout.type === 1 ? 'grid-cols-1' :
-                            currentLayout.type === 2 ? 'grid-cols-2' : 'grid-cols-3'
-                          }`}>
-                            {currentLayout.columns.map((column) => (
-                              <DroppableColumn
-                                key={column.id}
-                                column={column}
-                                blocks={column.blocks}
-                                onUpdate={updateContentBlock}
-                                onDelete={deleteContentBlock}
-                              />
-                            ))}
-                          </div>
+                          <SortableContext 
+                            items={currentLayout.columns.map(col => `column-draggable-${col.id}`)} 
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <div className={`grid gap-4 items-start ${
+                              currentLayout.type === 1 ? 'grid-cols-1' :
+                              currentLayout.type === 2 ? 'grid-cols-2' : 'grid-cols-3'
+                            }`}>
+                              {currentLayout.columns.map((column) => (
+                                <DroppableColumn
+                                  key={column.id}
+                                  column={column}
+                                  blocks={column.blocks}
+                                  onUpdate={updateContentBlock}
+                                  onDelete={deleteContentBlock}
+                                />
+                              ))}
+                            </div>
+                          </SortableContext>
                         </div>
 
                         {/* Empty State */}
