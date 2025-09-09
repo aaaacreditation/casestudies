@@ -170,18 +170,19 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
       
       {block.type === 'image' && (block.fileUrl || block.url) && (
         <div>
-          <div className="relative w-full">
+          <div className="relative w-full max-w-4xl mx-auto">
             <Image
               src={block.fileUrl || block.url || ''}
               alt={block.caption || 'Content image'}
-              width={800}
-              height={600}
-              className="w-full h-auto object-contain rounded-lg"
-              style={{ maxHeight: 'none' }}
+              width={1200}
+              height={800}
+              className="w-full h-auto object-contain rounded-lg shadow-md"
+              style={{ maxHeight: '600px' }}
+              priority={false}
             />
           </div>
           {block.caption && (
-            <div className="p-4 bg-slate-50 text-sm text-slate-600 text-center">
+            <div className="p-4 bg-slate-50 text-sm text-slate-600 text-center max-w-4xl mx-auto">
               {block.caption}
             </div>
           )}
@@ -346,13 +347,15 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                   ) : caseStudy.mediaType === 'IMAGE_AND_VIDEO' ? (
                     <div className="space-y-6">
                       {caseStudy.featuredImage && (
-                        <div className="relative w-full rounded-2xl overflow-hidden shadow-lg">
+                        <div className="relative w-full max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-lg">
                           <Image
                             src={caseStudy.featuredImage}
                             alt={caseStudy.title}
-                            width={800}
-                            height={600}
-                            className="w-full h-auto object-contain"
+                            width={1200}
+                            height={675}
+                            className="w-full h-auto object-cover"
+                            style={{ maxHeight: '500px', minHeight: '300px' }}
+                            priority={true}
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                         </div>
@@ -379,13 +382,15 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                       )}
                     </div>
                   ) : caseStudy.featuredImage ? (
-                    <div className="relative w-full rounded-2xl overflow-hidden shadow-lg">
+                    <div className="relative w-full max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-lg">
                       <Image
                         src={caseStudy.featuredImage}
                         alt={caseStudy.title}
-                        width={800}
-                        height={600}
-                        className="w-full h-auto object-contain"
+                        width={1200}
+                        height={675}
+                        className="w-full h-auto object-cover"
+                        style={{ maxHeight: '500px', minHeight: '300px' }}
+                        priority={true}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                     </div>
