@@ -324,7 +324,7 @@ export default function EditCaseStudy() {
     columns: [{ id: 'column-1', blocks: [] }]
   })
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [mediaType, setMediaType] = useState<MediaType>('IMAGE_ONLY')
+  const [mediaType, setMediaType] = useState<MediaType>(MediaType.IMAGE_ONLY)
   const [featuredImage, setFeaturedImage] = useState<File | null>(null)
   const [featuredImageUrl, setFeaturedImageUrl] = useState<string>('')
   const [featuredVideo, setFeaturedVideo] = useState<string>('')
@@ -375,7 +375,7 @@ export default function EditCaseStudy() {
         }
 
         // Set media data
-        setMediaType(data.mediaType || 'IMAGE_ONLY')
+        setMediaType(data.mediaType || MediaType.IMAGE_ONLY)
         setFeaturedImageUrl(data.featuredImage || '')
         setFeaturedVideo(data.featuredVideo || '')
 
