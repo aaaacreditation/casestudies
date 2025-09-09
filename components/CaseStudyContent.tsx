@@ -170,12 +170,14 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
       
       {block.type === 'image' && (block.fileUrl || block.url) && (
         <div>
-          <div className="relative h-96">
+          <div className="relative w-full">
             <Image
               src={block.fileUrl || block.url || ''}
               alt={block.caption || 'Content image'}
-              fill
-              className="object-cover"
+              width={800}
+              height={600}
+              className="w-full h-auto object-contain rounded-lg"
+              style={{ maxHeight: 'none' }}
             />
           </div>
           {block.caption && (
@@ -344,12 +346,13 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                   ) : caseStudy.mediaType === 'IMAGE_AND_VIDEO' ? (
                     <div className="space-y-6">
                       {caseStudy.featuredImage && (
-                        <div className="relative h-96 rounded-2xl overflow-hidden shadow-lg">
+                        <div className="relative w-full rounded-2xl overflow-hidden shadow-lg">
                           <Image
                             src={caseStudy.featuredImage}
                             alt={caseStudy.title}
-                            fill
-                            className="object-cover"
+                            width={800}
+                            height={600}
+                            className="w-full h-auto object-contain"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                         </div>
@@ -376,12 +379,13 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                       )}
                     </div>
                   ) : caseStudy.featuredImage ? (
-                    <div className="relative h-96 rounded-2xl overflow-hidden shadow-lg">
+                    <div className="relative w-full rounded-2xl overflow-hidden shadow-lg">
                       <Image
                         src={caseStudy.featuredImage}
                         alt={caseStudy.title}
-                        fill
-                        className="object-cover"
+                        width={800}
+                        height={600}
+                        className="w-full h-auto object-contain"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                     </div>
