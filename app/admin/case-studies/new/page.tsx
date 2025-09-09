@@ -326,7 +326,7 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, blocks, onUpd
   return (
     <div
       ref={setNodeRef}
-      className={`flex-1 min-h-[400px] border-2 border-dashed rounded-lg p-4 transition-colors ${
+      className={`w-full min-h-[400px] border-2 border-dashed rounded-lg p-4 transition-colors ${
         isOver 
           ? 'border-[#0a4373] bg-[#0a4373]/5' 
           : 'border-slate-200 bg-slate-50/50'
@@ -1183,7 +1183,7 @@ export default function NewCaseStudy() {
                         {/* Layout Grid */}
                         <div className="bg-white border border-slate-200 rounded-lg p-4">
                           <h3 className="text-sm font-medium text-slate-700 mb-3">Layout Preview</h3>
-                          <div className={`grid gap-4 ${
+                          <div className={`grid gap-4 items-start ${
                             currentLayout.type === 1 ? 'grid-cols-1' :
                             currentLayout.type === 2 ? 'grid-cols-2' : 'grid-cols-3'
                           }`}>

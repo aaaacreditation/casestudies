@@ -105,13 +105,18 @@ function ContentBlocks({ content }: { content: string }) {
   return (
     <>
       {/* Render Layout */}
-      <div className={`grid gap-6 ${
+      <div className={`grid gap-8 ${
         layout.type === 1 ? 'grid-cols-1' :
         layout.type === 2 ? 'grid-cols-1 md:grid-cols-2' : 
         'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
       }`}>
         {layout.columns.map((column, columnIndex) => (
-          <div key={column.id} className="space-y-6">
+          <div 
+            key={column.id} 
+            className={`space-y-4 ${
+              layout.type > 1 ? 'border-l-2 border-slate-200 pl-6 first:border-l-0 first:pl-0' : ''
+            }`}
+          >
             {column.blocks.map((block, blockIndex) => (
               <ContentBlockRenderer 
                 key={block.id} 
@@ -143,21 +148,21 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: (index % 10) * 0.1 }}
-      className="bg-white rounded-2xl border border-slate-200 overflow-hidden"
+      className="overflow-hidden"
     >
       {block.type === 'title' && block.content && (
-        <div className="p-8">
-          {block.titleLevel === 1 && <h1 className="text-4xl font-bold text-slate-800 leading-tight">{block.content}</h1>}
-          {block.titleLevel === 2 && <h2 className="text-3xl font-semibold text-slate-800 leading-tight">{block.content}</h2>}
-          {block.titleLevel === 3 && <h3 className="text-2xl font-medium text-slate-800 leading-tight">{block.content}</h3>}
-          {block.titleLevel === 4 && <h4 className="text-xl font-medium text-slate-800 leading-tight">{block.content}</h4>}
-          {block.titleLevel === 5 && <h5 className="text-lg font-medium text-slate-800 leading-tight">{block.content}</h5>}
-          {block.titleLevel === 6 && <h6 className="text-base font-medium text-slate-800 leading-tight">{block.content}</h6>}
+        <div className="mb-6">
+          {block.titleLevel === 1 && <h1 className="text-4xl font-bold text-slate-800 leading-tight mb-4">{block.content}</h1>}
+          {block.titleLevel === 2 && <h2 className="text-3xl font-semibold text-slate-800 leading-tight mb-4">{block.content}</h2>}
+          {block.titleLevel === 3 && <h3 className="text-2xl font-medium text-slate-800 leading-tight mb-3">{block.content}</h3>}
+          {block.titleLevel === 4 && <h4 className="text-xl font-medium text-slate-800 leading-tight mb-3">{block.content}</h4>}
+          {block.titleLevel === 5 && <h5 className="text-lg font-medium text-slate-800 leading-tight mb-2">{block.content}</h5>}
+          {block.titleLevel === 6 && <h6 className="text-base font-medium text-slate-800 leading-tight mb-2">{block.content}</h6>}
         </div>
       )}
 
       {block.type === 'text' && block.content && (
-        <div className="p-8">
+        <div className="mb-6 prose prose-lg max-w-none">
           <MDEditor 
             source={block.content} 
             style={{ 
@@ -169,7 +174,7 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
       )}
       
       {block.type === 'image' && (block.fileUrl || block.url) && (
-        <div>
+        <div className="mb-8">
           <div className="relative w-full max-w-4xl mx-auto">
             <Image
               src={block.fileUrl || block.url || ''}
@@ -182,7 +187,7 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
             />
           </div>
           {block.caption && (
-            <div className="p-4 bg-slate-50 text-sm text-slate-600 text-center max-w-4xl mx-auto">
+            <div className="mt-3 text-sm text-slate-600 text-center max-w-4xl mx-auto italic">
               {block.caption}
             </div>
           )}
