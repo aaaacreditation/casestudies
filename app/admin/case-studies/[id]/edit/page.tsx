@@ -21,7 +21,8 @@ import {
   Type,
   Columns,
   Grid3X3,
-  Square
+  Square,
+  LayoutGrid
 } from 'lucide-react'
 import Link from 'next/link'
 import { CaseStudy, MediaType } from '@/types'
@@ -50,7 +51,7 @@ import { CSS } from '@dnd-kit/utilities'
 // Content Block Types
 interface ContentBlock {
   id: string
-  type: 'text' | 'image' | 'video' | 'title'
+  type: 'text' | 'image' | 'video' | 'title' | 'column'
   content?: string
   file?: File
   url?: string
@@ -58,6 +59,7 @@ interface ContentBlock {
   caption?: string
   columnId?: string
   titleLevel?: 1 | 2 | 3 | 4 | 5 | 6
+  blocks?: ContentBlock[] // For column type
 }
 
 // Layout Types
@@ -121,6 +123,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
           {block.type === 'title' && <Type className="w-4 h-4 text-orange-600" />}
           {block.type === 'image' && <ImageIcon className="w-4 h-4 text-green-600" />}
           {block.type === 'video' && <Video className="w-4 h-4 text-purple-600" />}
+          {block.type === 'column' && <LayoutGrid className="w-4 h-4 text-indigo-600" />}
           <span className="text-sm font-medium text-slate-700 capitalize">
             {block.type === 'title' ? `Title H${block.titleLevel || 1}` : `${block.type} Block`}
           </span>
@@ -245,6 +248,22 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
             />
           </div>
         )}
+        
+        {block.type === 'column' && (
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={block.content || ''}
+              onChange={(e) => onUpdate(block.id, { content: e.target.value })}
+              placeholder="Column title (optional)"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm"
+            />
+            <div className="text-xs text-slate-500 bg-slate-50 rounded-lg p-3">
+              <LayoutGrid className="w-4 h-4 inline mr-1" />
+              This is a column container. Drag it to the Layout Preview to create a column in your layout.
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -258,6 +277,47 @@ interface DroppableColumnProps {
   onDelete: (id: string) => void
   onRemoveColumn?: (columnId: string) => void
   totalColumns: number
+}
+
+// Simple Layout Drop Area Component
+interface LayoutDropAreaProps {
+  blocks: ContentBlock[]
+  onUpdate: (id: string, updates: Partial<ContentBlock>) => void
+  onDelete: (id: string) => void
+}
+
+const LayoutDropArea: React.FC<LayoutDropAreaProps> = ({ blocks, onUpdate, onDelete }) => {
+  const { setNodeRef, isOver } = useDroppable({ id: 'layout' })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`min-h-[300px] border-2 border-dashed rounded-lg p-6 transition-colors ${
+        isOver ? 'border-[#0a4373] bg-[#0a4373]/5' : 'border-slate-300 bg-slate-50/50'
+      }`}
+    >
+      {blocks.length > 0 ? (
+        <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-4">
+            {blocks.map((block) => (
+              <DraggableBlock
+                key={block.id}
+                block={block}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      ) : (
+        <div className="text-center text-slate-500">
+          <LayoutGrid className="mx-auto h-12 w-12 text-slate-300 mb-3" />
+          <p className="text-lg font-medium mb-2">Drag Content Here</p>
+          <p className="text-sm">Drag columns and content blocks from the Available Content Blocks section above to build your layout.</p>
+        </div>
+      )}
+    </div>
+  )
 }
 
 const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, blocks, onUpdate, onDelete, onRemoveColumn, totalColumns }) => {
@@ -364,6 +424,7 @@ export default function EditCaseStudy() {
 
   // Content Block Management State
   const [availableBlocks, setAvailableBlocks] = useState<ContentBlock[]>([])
+  const [layoutBlocks, setLayoutBlocks] = useState<ContentBlock[]>([]) // New simple layout state
   const [currentLayout, setCurrentLayout] = useState<Layout>({
     id: 'layout-1',
     type: 1,
@@ -414,6 +475,9 @@ export default function EditCaseStudy() {
             }
             if (parsedContent.availableBlocks) {
               setAvailableBlocks(parsedContent.availableBlocks)
+            }
+            if (parsedContent.layoutBlocks) {
+              setLayoutBlocks(parsedContent.layoutBlocks)
             }
           } catch (error) {
             console.error('Error parsing content:', error)
@@ -473,6 +537,9 @@ export default function EditCaseStudy() {
     setAvailableBlocks(prev => prev.map(block => 
       block.id === id ? { ...block, ...updates } : block
     ))
+    setLayoutBlocks(prev => prev.map(block => 
+      block.id === id ? { ...block, ...updates } : block
+    ))
     setCurrentLayout(prev => ({
       ...prev,
       columns: prev.columns.map(column => ({
@@ -486,6 +553,7 @@ export default function EditCaseStudy() {
 
   const deleteContentBlock = (id: string) => {
     setAvailableBlocks(prev => prev.filter(block => block.id !== id))
+    setLayoutBlocks(prev => prev.filter(block => block.id !== id))
     setCurrentLayout(prev => ({
       ...prev,
       columns: prev.columns.map(column => ({
@@ -511,17 +579,14 @@ export default function EditCaseStudy() {
   }
 
   const addColumn = () => {
-    const newColumnNumber = currentLayout.columns.length + 1
-    const newColumn: LayoutColumn = {
-      id: `column-${newColumnNumber}`,
-      blocks: []
+    const newColumn: ContentBlock = {
+      id: generateId(),
+      type: 'column',
+      content: `Column ${availableBlocks.filter(b => b.type === 'column').length + 1}`,
+      blocks: [] // Column-specific property to hold nested content
     }
     
-    setCurrentLayout(prev => ({
-      ...prev,
-      type: Math.min(Math.max(prev.columns.length + 1, 1), 3) as 1 | 2 | 3, // Keep type within bounds but allow more columns
-      columns: [...prev.columns, newColumn]
-    }))
+    setAvailableBlocks(prev => [...prev, newColumn])
   }
 
   const removeColumn = (columnId: string) => {
@@ -546,7 +611,64 @@ export default function EditCaseStudy() {
   }
 
   const handleDragOver = (event: DragOverEvent) => {
-    // Handle drag over logic if needed
+    const { active, over } = event
+    
+    if (!over) return
+    
+    const activeId = active.id as string
+    const overId = over.id as string
+    
+    // Find the active item
+    const activeBlock = availableBlocks.find(block => block.id === activeId) ||
+      layoutBlocks.find(block => block.id === activeId) ||
+      currentLayout.columns.flatMap(col => col.blocks).find(block => block.id === activeId)
+    
+    if (!activeBlock) return
+    
+    // Handle dropping into the simple layout area
+    if (overId === 'layout') {
+      // Remove from current location
+      if (availableBlocks.find(block => block.id === activeId)) {
+        setAvailableBlocks(prev => prev.filter(block => block.id !== activeId))
+      } else if (layoutBlocks.find(block => block.id === activeId)) {
+        return // Already in layout
+      } else {
+        // Remove from old complex layout
+        setCurrentLayout(prev => ({
+          ...prev,
+          columns: prev.columns.map(col => ({
+            ...col,
+            blocks: col.blocks.filter(block => block.id !== activeId)
+          }))
+        }))
+      }
+      
+      // Add to layout blocks
+      if (!layoutBlocks.find(block => block.id === activeId)) {
+        setLayoutBlocks(prev => [...prev, activeBlock])
+      }
+    }
+    
+    // Handle dropping back to available blocks
+    if (overId === 'available') {
+      // Remove from current location
+      if (layoutBlocks.find(block => block.id === activeId)) {
+        setLayoutBlocks(prev => prev.filter(block => block.id !== activeId))
+      } else {
+        setCurrentLayout(prev => ({
+          ...prev,
+          columns: prev.columns.map(col => ({
+            ...col,
+            blocks: col.blocks.filter(block => block.id !== activeId)
+          }))
+        }))
+      }
+      
+      // Add to available blocks
+      if (!availableBlocks.find(block => block.id === activeId)) {
+        setAvailableBlocks(prev => [...prev, activeBlock])
+      }
+    }
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -634,7 +756,8 @@ export default function EditCaseStudy() {
           excerpt: formData.excerpt,
           content: JSON.stringify({
             layout: currentLayout,
-            availableBlocks: availableBlocks
+            availableBlocks: availableBlocks,
+            layoutBlocks: layoutBlocks
           }),
           mediaType: mediaType,
           featuredVideo: featuredVideo,
@@ -1189,36 +1312,21 @@ export default function EditCaseStudy() {
                         )}
                       </div>
 
-                      {/* Layout Grid */}
+                      {/* Simple Layout Area */}
                       <div className="bg-white border border-slate-200 rounded-lg p-4">
-                        <h4 className="text-sm font-medium text-slate-700 mb-3">Layout Preview</h4>
-                        <SortableContext 
-                          items={currentLayout.columns.map(col => `column-draggable-${col.id}`)} 
-                          strategy={horizontalListSortingStrategy}
-                        >
-                          <div className={`flex gap-4 ${
-                            currentLayout.columns.length === 1 ? 'flex-col' : 'flex-row'
-                          }`}>
-                            {currentLayout.columns.map((column) => (
-                              <div 
-                                key={column.id} 
-                                className={`${
-                                  currentLayout.columns.length === 1 ? 'w-full' : 'flex-1 min-w-0'
-                                }`}
-                                style={{ minWidth: currentLayout.columns.length > 3 ? '250px' : undefined }}
-                              >
-                                <DroppableColumn
-                                  column={column}
-                                  blocks={column.blocks}
-                                  onUpdate={updateContentBlock}
-                                  onDelete={deleteContentBlock}
-                                  onRemoveColumn={removeColumn}
-                                  totalColumns={currentLayout.columns.length}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </SortableContext>
+                        <h4 className="text-sm font-medium text-slate-700 mb-3">Layout Preview ({layoutBlocks.length} items)</h4>
+                        <LayoutDropArea 
+                          blocks={layoutBlocks} 
+                          onUpdate={updateContentBlock} 
+                          onDelete={(blockId) => {
+                            // Remove from layout and add back to available
+                            const blockToRemove = layoutBlocks.find(b => b.id === blockId)
+                            if (blockToRemove) {
+                              setLayoutBlocks(prev => prev.filter(b => b.id !== blockId))
+                              setAvailableBlocks(prev => [...prev, blockToRemove])
+                            }
+                          }} 
+                        />
                       </div>
 
                       {/* Empty State */}
