@@ -286,9 +286,10 @@ interface LayoutDropAreaProps {
   blocks: ContentBlock[]
   onUpdate: (id: string, updates: Partial<ContentBlock>) => void
   onDelete: (id: string) => void
+  onMoveToAvailable: (block: ContentBlock) => void
 }
 
-const LayoutDropArea: React.FC<LayoutDropAreaProps> = ({ blocks, onUpdate, onDelete }) => {
+const LayoutDropArea: React.FC<LayoutDropAreaProps> = ({ blocks, onUpdate, onDelete, onMoveToAvailable }) => {
   const { setNodeRef, isOver } = useDroppable({ id: 'layout' })
 
   // Separate columns from other content blocks
@@ -298,46 +299,38 @@ const LayoutDropArea: React.FC<LayoutDropAreaProps> = ({ blocks, onUpdate, onDel
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[300px] border-2 border-dashed rounded-lg p-6 transition-colors ${
+      className={`min-h-[400px] border-2 border-dashed rounded-lg p-6 transition-colors ${
         isOver ? 'border-[#0a4373] bg-[#0a4373]/5' : 'border-slate-300 bg-slate-50/50'
       }`}
     >
       {blocks.length > 0 ? (
-        <div className="space-y-6">
-          {/* Render columns as droppable containers */}
-          {columnBlocks.length > 0 && (
-            <div className={`grid gap-4 ${
-              columnBlocks.length === 1 ? 'grid-cols-1' : 
-              columnBlocks.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 
-              'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-            }`}>
-              {columnBlocks.map((column) => (
-                <LayoutColumn
-                  key={column.id}
-                  column={column}
-                  onUpdate={onUpdate}
-                  onDelete={onDelete}
-                />
-              ))}
-            </div>
-          )}
-          
-          {/* Render other content blocks normally */}
-          {contentBlocks.length > 0 && (
-            <SortableContext items={contentBlocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-4">
-                {contentBlocks.map((block) => (
+        <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-6">
+            {/* Render all blocks in order - columns and content */}
+            {blocks.map((block) => {
+              if (block.type === 'column') {
+                return (
+                  <SimpleColumnContainer
+                    key={block.id}
+                    column={block}
+                    onUpdate={onUpdate}
+                    onDelete={onDelete}
+                    onMoveToAvailable={onMoveToAvailable}
+                  />
+                )
+              } else {
+                return (
                   <DraggableBlock
                     key={block.id}
                     block={block}
                     onUpdate={onUpdate}
                     onDelete={onDelete}
                   />
-                ))}
-              </div>
-            </SortableContext>
-          )}
-        </div>
+                )
+              }
+            })}
+          </div>
+        </SortableContext>
       ) : (
         <div className="text-center text-slate-500">
           <LayoutGrid className="mx-auto h-12 w-12 text-slate-300 mb-3" />
@@ -399,18 +392,55 @@ const AvailableBlocksContainer: React.FC<AvailableBlocksContainerProps> = ({ blo
   )
 }
 
-const LayoutColumn: React.FC<LayoutColumnProps> = ({ column, onUpdate, onDelete }) => {
-  const droppableId = `layout-column-${column.id}`
-  const { setNodeRef, isOver } = useDroppable({ id: droppableId })
+// Simple Column Container - acts like a draggable block but can accept drops
+interface SimpleColumnContainerProps {
+  column: ContentBlock
+  onUpdate: (id: string, updates: Partial<ContentBlock>) => void
+  onDelete: (id: string) => void
+  onMoveToAvailable: (block: ContentBlock) => void
+}
+
+const SimpleColumnContainer: React.FC<SimpleColumnContainerProps> = ({ column, onUpdate, onDelete, onMoveToAvailable }) => {
+  // Make the column itself draggable
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setSortableRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: column.id })
+
+  // Make the column content area droppable
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({ 
+    id: `column-content-${column.id}` 
+  })
+
   const columnBlocks = column.blocks || []
-  
-  console.log('LayoutColumn rendered with droppableId:', droppableId, 'column:', column)
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1
+  }
 
   return (
-    <div className="space-y-2">
-      {/* Column Header */}
-      <div className="flex items-center justify-between p-2 bg-indigo-50 rounded-lg border border-indigo-200">
+    <div
+      ref={setSortableRef}
+      style={style}
+      className={`border border-slate-200 rounded-lg bg-white ${isDragging ? 'shadow-lg' : ''}`}
+    >
+      {/* Column Header - draggable */}
+      <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-t-lg border-b border-indigo-200">
         <div className="flex items-center gap-2">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-1 hover:bg-indigo-200 rounded"
+            title="Drag to move column"
+          >
+            <GripVertical className="w-4 h-4 text-indigo-600" />
+          </div>
           <LayoutGrid className="w-4 h-4 text-indigo-600" />
           <input
             type="text"
@@ -432,28 +462,49 @@ const LayoutColumn: React.FC<LayoutColumnProps> = ({ column, onUpdate, onDelete 
 
       {/* Droppable Column Content */}
       <div
-        ref={setNodeRef}
-        className={`min-h-[200px] border-2 border-dashed rounded-lg p-4 transition-colors ${
-          isOver ? 'border-[#0a4373] bg-[#0a4373]/5' : 'border-slate-300 bg-slate-50/50'
+        ref={setDroppableRef}
+        className={`min-h-[150px] p-4 transition-colors ${
+          isOver ? 'bg-[#0a4373]/5 border-2 border-dashed border-[#0a4373] rounded-b-lg' : 'rounded-b-lg'
         }`}
       >
         {columnBlocks.length > 0 ? (
-          <SortableContext items={columnBlocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-3">
-              {columnBlocks.map((block) => (
-                <DraggableBlock
-                  key={block.id}
-                  block={block}
-                  onUpdate={onUpdate}
-                  onDelete={onDelete}
-                />
-              ))}
-            </div>
-          </SortableContext>
+          <div className="space-y-3">
+            {columnBlocks.map((block) => (
+              <div key={block.id} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                <div className="flex items-center gap-2 mb-2">
+                  {block.type === 'text' && <Type className="w-4 h-4 text-blue-600" />}
+                  {block.type === 'title' && <Type className="w-4 h-4 text-orange-600" />}
+                  {block.type === 'image' && <ImageIcon className="w-4 h-4 text-green-600" />}
+                  {block.type === 'video' && <Video className="w-4 h-4 text-purple-600" />}
+                  <span className="text-xs font-medium text-slate-600 capitalize">
+                    {block.type === 'title' ? `Title H${block.titleLevel || 1}` : `${block.type} Block`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Remove from column and add back to available
+                      const updatedBlocks = columnBlocks.filter(b => b.id !== block.id)
+                      onUpdate(column.id, { blocks: updatedBlocks })
+                      // Add back to available blocks
+                      onMoveToAvailable(block)
+                    }}
+                    className="ml-auto text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
+                    title="Remove from column"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+                <div className="text-xs text-slate-500 truncate">
+                  {block.content || 'No content'}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="text-center text-slate-400 py-8">
             <FileText className="mx-auto h-8 w-8 text-slate-300 mb-2" />
             <p className="text-sm">Drop content blocks here</p>
+            <p className="text-xs text-slate-400 mt-1">Drag text, images, or videos into this column</p>
           </div>
         )}
       </div>
@@ -815,10 +866,16 @@ export default function EditCaseStudy() {
       return
     }
 
-    // Handle dropping into a column
-    if (overId.startsWith('layout-column-')) {
-      const columnId = overId.replace('layout-column-', '')
-      console.log('Dropping into column:', columnId)
+    // Handle dropping into a column content area
+    if (overId.startsWith('column-content-')) {
+      const columnId = overId.replace('column-content-', '')
+      console.log('Dropping into column content:', columnId)
+      
+      // Don't allow dropping columns into columns
+      if (activeBlock.type === 'column') {
+        console.log('Cannot drop column into column')
+        return
+      }
       
       // Remove from current location
       if (availableBlocks.find(b => b.id === activeId)) {
@@ -1462,7 +1519,10 @@ export default function EditCaseStudy() {
                               setLayoutBlocks(prev => prev.filter(b => b.id !== blockId))
                               setAvailableBlocks(prev => [...prev, blockToRemove])
                             }
-                          }} 
+                          }}
+                          onMoveToAvailable={(block) => {
+                            setAvailableBlocks(prev => [...prev, block])
+                          }}
                         />
                       </div>
 
