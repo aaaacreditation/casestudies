@@ -289,6 +289,10 @@ interface LayoutDropAreaProps {
 const LayoutDropArea: React.FC<LayoutDropAreaProps> = ({ blocks, onUpdate, onDelete }) => {
   const { setNodeRef, isOver } = useDroppable({ id: 'layout' })
 
+  // Separate columns from other content blocks
+  const columnBlocks = blocks.filter(block => block.type === 'column')
+  const contentBlocks = blocks.filter(block => block.type !== 'column')
+
   return (
     <div
       ref={setNodeRef}
@@ -297,18 +301,41 @@ const LayoutDropArea: React.FC<LayoutDropAreaProps> = ({ blocks, onUpdate, onDel
       }`}
     >
       {blocks.length > 0 ? (
-        <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-4">
-            {blocks.map((block) => (
-              <DraggableBlock
-                key={block.id}
-                block={block}
-                onUpdate={onUpdate}
-                onDelete={onDelete}
-              />
-            ))}
-          </div>
-        </SortableContext>
+        <div className="space-y-6">
+          {/* Render columns as droppable containers */}
+          {columnBlocks.length > 0 && (
+            <div className={`grid gap-4 ${
+              columnBlocks.length === 1 ? 'grid-cols-1' : 
+              columnBlocks.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 
+              'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+            }`}>
+              {columnBlocks.map((column) => (
+                <LayoutColumn
+                  key={column.id}
+                  column={column}
+                  onUpdate={onUpdate}
+                  onDelete={onDelete}
+                />
+              ))}
+            </div>
+          )}
+          
+          {/* Render other content blocks normally */}
+          {contentBlocks.length > 0 && (
+            <SortableContext items={contentBlocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-4">
+                {contentBlocks.map((block) => (
+                  <DraggableBlock
+                    key={block.id}
+                    block={block}
+                    onUpdate={onUpdate}
+                    onDelete={onDelete}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          )}
+        </div>
       ) : (
         <div className="text-center text-slate-500">
           <LayoutGrid className="mx-auto h-12 w-12 text-slate-300 mb-3" />
@@ -316,6 +343,72 @@ const LayoutDropArea: React.FC<LayoutDropAreaProps> = ({ blocks, onUpdate, onDel
           <p className="text-sm">Drag columns and content blocks from the Available Content Blocks section above to build your layout.</p>
         </div>
       )}
+    </div>
+  )
+}
+
+// Layout Column Component (for columns in the layout area)
+interface LayoutColumnProps {
+  column: ContentBlock
+  onUpdate: (id: string, updates: Partial<ContentBlock>) => void
+  onDelete: (id: string) => void
+}
+
+const LayoutColumn: React.FC<LayoutColumnProps> = ({ column, onUpdate, onDelete }) => {
+  const { setNodeRef, isOver } = useDroppable({ id: `layout-column-${column.id}` })
+  const columnBlocks = column.blocks || []
+
+  return (
+    <div className="space-y-2">
+      {/* Column Header */}
+      <div className="flex items-center justify-between p-2 bg-indigo-50 rounded-lg border border-indigo-200">
+        <div className="flex items-center gap-2">
+          <LayoutGrid className="w-4 h-4 text-indigo-600" />
+          <input
+            type="text"
+            value={column.content || ''}
+            onChange={(e) => onUpdate(column.id, { content: e.target.value })}
+            placeholder="Column title"
+            className="bg-transparent text-sm font-medium text-indigo-800 border-none outline-none flex-1"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => onDelete(column.id)}
+          className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+          title="Remove column"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Droppable Column Content */}
+      <div
+        ref={setNodeRef}
+        className={`min-h-[200px] border-2 border-dashed rounded-lg p-4 transition-colors ${
+          isOver ? 'border-[#0a4373] bg-[#0a4373]/5' : 'border-slate-300 bg-slate-50/50'
+        }`}
+      >
+        {columnBlocks.length > 0 ? (
+          <SortableContext items={columnBlocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-3">
+              {columnBlocks.map((block) => (
+                <DraggableBlock
+                  key={block.id}
+                  block={block}
+                  onUpdate={onUpdate}
+                  onDelete={onDelete}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        ) : (
+          <div className="text-center text-slate-400 py-8">
+            <FileText className="mx-auto h-8 w-8 text-slate-300 mb-2" />
+            <p className="text-sm">Drop content blocks here</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -537,9 +630,21 @@ export default function EditCaseStudy() {
     setAvailableBlocks(prev => prev.map(block => 
       block.id === id ? { ...block, ...updates } : block
     ))
-    setLayoutBlocks(prev => prev.map(block => 
-      block.id === id ? { ...block, ...updates } : block
-    ))
+    setLayoutBlocks(prev => prev.map(block => {
+      if (block.id === id) {
+        return { ...block, ...updates }
+      }
+      // Update nested blocks in columns
+      if (block.type === 'column' && block.blocks) {
+        return {
+          ...block,
+          blocks: block.blocks.map(nestedBlock => 
+            nestedBlock.id === id ? { ...nestedBlock, ...updates } : nestedBlock
+          )
+        }
+      }
+      return block
+    }))
     setCurrentLayout(prev => ({
       ...prev,
       columns: prev.columns.map(column => ({
@@ -553,7 +658,19 @@ export default function EditCaseStudy() {
 
   const deleteContentBlock = (id: string) => {
     setAvailableBlocks(prev => prev.filter(block => block.id !== id))
-    setLayoutBlocks(prev => prev.filter(block => block.id !== id))
+    setLayoutBlocks(prev => prev.map(block => {
+      if (block.id === id) {
+        return null // Will be filtered out
+      }
+      // Remove nested blocks in columns
+      if (block.type === 'column' && block.blocks) {
+        return {
+          ...block,
+          blocks: block.blocks.filter(nestedBlock => nestedBlock.id !== id)
+        }
+      }
+      return block
+    }).filter(Boolean) as ContentBlock[])
     setCurrentLayout(prev => ({
       ...prev,
       columns: prev.columns.map(column => ({
@@ -626,6 +743,7 @@ export default function EditCaseStudy() {
     // Find the active block
     const activeBlock = availableBlocks.find(b => b.id === activeId) || 
                        layoutBlocks.find(b => b.id === activeId) ||
+                       layoutBlocks.flatMap(block => block.type === 'column' && block.blocks ? block.blocks : []).find(b => b.id === activeId) ||
                        currentLayout.columns.flatMap(col => col.blocks).find(b => b.id === activeId)
 
     if (!activeBlock) return
@@ -640,11 +758,46 @@ export default function EditCaseStudy() {
       return
     }
 
+    // Handle dropping into a column
+    if (overId.startsWith('layout-column-')) {
+      const columnId = overId.replace('layout-column-', '')
+      
+      // Remove from current location
+      if (availableBlocks.find(b => b.id === activeId)) {
+        setAvailableBlocks(prev => prev.filter(b => b.id !== activeId))
+      } else if (layoutBlocks.find(b => b.id === activeId)) {
+        setLayoutBlocks(prev => prev.filter(b => b.id !== activeId))
+      } else {
+        // Remove from another column
+        setLayoutBlocks(prev => prev.map(block => 
+          block.type === 'column' && block.blocks
+            ? { ...block, blocks: block.blocks.filter(b => b.id !== activeId) }
+            : block
+        ))
+      }
+      
+      // Add to target column
+      setLayoutBlocks(prev => prev.map(block => 
+        block.id === columnId && block.type === 'column'
+          ? { ...block, blocks: [...(block.blocks || []), activeBlock] }
+          : block
+      ))
+      return
+    }
+
     // Handle dropping back to available blocks
     if (overId === 'available') {
       // Remove from layout blocks
       if (layoutBlocks.find(b => b.id === activeId)) {
         setLayoutBlocks(prev => prev.filter(b => b.id !== activeId))
+        setAvailableBlocks(prev => [...prev, activeBlock])
+      } else {
+        // Remove from column and add to available blocks
+        setLayoutBlocks(prev => prev.map(block => 
+          block.type === 'column' && block.blocks
+            ? { ...block, blocks: block.blocks.filter(b => b.id !== activeId) }
+            : block
+        ))
         setAvailableBlocks(prev => [...prev, activeBlock])
       }
       return
