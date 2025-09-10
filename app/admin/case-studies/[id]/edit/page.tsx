@@ -10,14 +10,10 @@ import {
   Edit, 
   X, 
   Plus,
-  Image, 
   Video, 
   ImageIcon,
   FileText,
-  Upload,
-  Youtube,
   GripVertical,
-  Trash2,
   Type,
   Columns,
   Grid3X3,
@@ -36,16 +32,12 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  closestCorners,
-  closestCenter,
-  rectIntersection,
   pointerWithin,
   useDroppable
 } from '@dnd-kit/core'
 import {
   SortableContext,
   verticalListSortingStrategy,
-  horizontalListSortingStrategy,
   useSortable
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -83,278 +75,7 @@ const LAYOUT_TEMPLATES = {
   3: { columns: 3, icon: Grid3X3, label: '3 Columns' }
 }
 
-// Draggable Block Component
-interface DraggableBlockProps {
-  block: ContentBlock
-  onUpdate: (id: string, updates: Partial<ContentBlock>) => void
-  onDelete: (id: string) => void
-}
 
-const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDelete }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({ id: block.id })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1
-  }
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`border border-slate-200 rounded-lg bg-white overflow-hidden ${isDragging ? 'shadow-lg' : ''}`}
-    >
-      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-t-lg">
-        <div className="flex items-center gap-2">
-          <div
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 hover:bg-slate-200 rounded"
-          >
-            <GripVertical className="w-4 h-4 text-slate-400" />
-          </div>
-          {block.type === 'text' && <Type className="w-4 h-4 text-blue-600" />}
-          {block.type === 'title' && <Type className="w-4 h-4 text-orange-600" />}
-          {block.type === 'image' && <ImageIcon className="w-4 h-4 text-green-600" />}
-          {block.type === 'video' && <Video className="w-4 h-4 text-purple-600" />}
-          {block.type === 'column' && <LayoutGrid className="w-4 h-4 text-indigo-600" />}
-          <span className="text-sm font-medium text-slate-700 capitalize">
-            {block.type === 'title' ? `Title H${block.titleLevel || 1}` : `${block.type} Block`}
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={() => onDelete(block.id)}
-          className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
-      
-      <div className="p-4 overflow-hidden">
-        {block.type === 'title' && (
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-2">
-                Heading Level
-              </label>
-              <select
-                value={block.titleLevel || 1}
-                onChange={(e) => onUpdate(block.id, { titleLevel: parseInt(e.target.value) as 1 | 2 | 3 | 4 | 5 | 6 })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm"
-              >
-                <option value={1}>H1 - Main Title</option>
-                <option value={2}>H2 - Section Title</option>
-                <option value={3}>H3 - Subsection</option>
-                <option value={4}>H4 - Minor Heading</option>
-                <option value={5}>H5 - Small Heading</option>
-                <option value={6}>H6 - Tiny Heading</option>
-              </select>
-            </div>
-            <textarea
-              value={block.content || ''}
-              onChange={(e) => onUpdate(block.id, { content: e.target.value })}
-              placeholder="Enter title text..."
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm resize-none break-words"
-              rows={2}
-            />
-          </div>
-        )}
-
-        {block.type === 'text' && (
-          <div className="h-48 overflow-hidden">
-            <RichTextEditor
-              value={block.content || ''}
-              onChange={(content) => onUpdate(block.id, { content })}
-              placeholder="Enter your text content..."
-            />
-          </div>
-        )}
-
-        {block.type === 'image' && (
-          <div className="space-y-3">
-            {/* Image Preview */}
-            {(block.fileUrl || block.url) && (
-              <div className="relative">
-                <img
-                  src={block.fileUrl || block.url}
-                  alt={block.caption || 'Content image'}
-                  className="w-full h-32 object-cover rounded-lg border border-slate-200"
-                />
-                <button
-                  type="button"
-                  onClick={() => onUpdate(block.id, { fileUrl: '', url: '', file: undefined })}
-                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
-                  title="Remove image"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            )}
-            
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) {
-                  onUpdate(block.id, { file })
-                }
-              }}
-              className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#0a4373] file:text-white hover:file:bg-[#083455]"
-            />
-            
-            {/* URL Input Alternative */}
-            <div className="text-center text-xs text-slate-400">or</div>
-            <input
-              type="url"
-              value={block.url || ''}
-              onChange={(e) => onUpdate(block.id, { url: e.target.value })}
-              placeholder="Enter image URL"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm break-all"
-            />
-            
-            <input
-              type="text"
-              value={block.caption || ''}
-              onChange={(e) => onUpdate(block.id, { caption: e.target.value })}
-              placeholder="Image caption (optional)"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm break-words"
-            />
-          </div>
-        )}
-
-        {block.type === 'video' && (
-          <div className="space-y-3">
-            <input
-              type="url"
-              value={block.url || ''}
-              onChange={(e) => onUpdate(block.id, { url: e.target.value })}
-              placeholder="YouTube URL or video file URL"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm break-all"
-            />
-            <input
-              type="text"
-              value={block.caption || ''}
-              onChange={(e) => onUpdate(block.id, { caption: e.target.value })}
-              placeholder="Video caption (optional)"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm break-words"
-            />
-          </div>
-        )}
-        
-        {block.type === 'column' && (
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={block.content || ''}
-              onChange={(e) => onUpdate(block.id, { content: e.target.value })}
-              placeholder="Column title (optional)"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm"
-            />
-            <div className="text-xs text-slate-500 bg-slate-50 rounded-lg p-3">
-              <LayoutGrid className="w-4 h-4 inline mr-1" />
-              This is a column container. Drag it to the Layout Preview to create a column in your layout.
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// Droppable Column Component
-interface DroppableColumnProps {
-  column: LayoutColumn
-  blocks: ContentBlock[]
-  onUpdate: (id: string, updates: Partial<ContentBlock>) => void
-  onDelete: (id: string) => void
-  onRemoveColumn?: (columnId: string) => void
-  totalColumns: number
-}
-
-// Simple Layout Drop Area Component
-interface LayoutDropAreaProps {
-  blocks: ContentBlock[]
-  onUpdate: (id: string, updates: Partial<ContentBlock>) => void
-  onDelete: (id: string) => void
-  onMoveToAvailable: (block: ContentBlock) => void
-}
-
-const LayoutDropArea: React.FC<LayoutDropAreaProps> = ({ blocks, onUpdate, onDelete, onMoveToAvailable }) => {
-  const { setNodeRef, isOver } = useDroppable({ id: 'layout' })
-
-  // Separate columns from other content blocks
-  const columnBlocks = blocks.filter(block => block.type === 'column')
-  const contentBlocks = blocks.filter(block => block.type !== 'column')
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={`min-h-[400px] border-2 border-dashed rounded-lg p-6 transition-colors ${
-        isOver ? 'border-[#0a4373] bg-[#0a4373]/5' : 'border-slate-300 bg-slate-50/50'
-      }`}
-    >
-      {blocks.length > 0 ? (
-        <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-6">
-            {/* Render all blocks in order - columns and content */}
-            {blocks.map((block) => {
-              if (block.type === 'column') {
-                return (
-                  <SimpleColumnContainer
-                    key={block.id}
-                    column={block}
-                    onUpdate={onUpdate}
-                    onDelete={onDelete}
-                    onMoveToAvailable={onMoveToAvailable}
-                  />
-                )
-              } else {
-                return (
-                  <DraggableBlock
-                    key={block.id}
-                    block={block}
-                    onUpdate={onUpdate}
-                    onDelete={onDelete}
-                  />
-                )
-              }
-            })}
-          </div>
-        </SortableContext>
-      ) : (
-        <div className="text-center text-slate-500">
-          <LayoutGrid className="mx-auto h-12 w-12 text-slate-300 mb-3" />
-          <p className="text-lg font-medium mb-2">Drag Content Here</p>
-          <p className="text-sm">Drag columns and content blocks from the Available Content Blocks section above to build your layout.</p>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Layout Column Component (for columns in the layout area)
-interface LayoutColumnProps {
-  column: ContentBlock
-  onUpdate: (id: string, updates: Partial<ContentBlock>) => void
-  onDelete: (id: string) => void
-}
-
-// Available Blocks Container Component
-interface AvailableBlocksContainerProps {
-  blocks: ContentBlock[]
-  onUpdate: (id: string, updates: Partial<ContentBlock>) => void
-  onDelete: (id: string) => void
-}
 
 // Simple Content Editor - no confusing "Available Blocks", just direct editing
 interface SimpleContentEditorProps {
@@ -680,87 +401,6 @@ const EditableBlock: React.FC<EditableBlockProps> = ({ block, onUpdate, onDelete
 }
 
 
-const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, blocks, onUpdate, onDelete, onRemoveColumn, totalColumns }) => {
-  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
-    id: column.id,
-  })
-
-  const {
-    attributes: columnAttributes,
-    listeners: columnListeners,
-    setNodeRef: setSortableRef,
-    transform: columnTransform,
-    transition: columnTransition,
-    isDragging: isColumnDragging
-  } = useSortable({ 
-    id: `column-draggable-${column.id}`,
-    data: { type: 'column', column }
-  })
-
-  const columnStyle = {
-    transform: CSS.Transform.toString(columnTransform),
-    transition: columnTransition,
-    opacity: isColumnDragging ? 0.5 : 1
-  }
-
-  // Combine refs
-  const setNodeRef = (node: HTMLElement | null) => {
-    setDroppableRef(node)
-    setSortableRef(node)
-  }
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={columnStyle}
-      className={`flex-1 min-h-[400px] border-2 border-dashed rounded-lg p-4 transition-colors ${
-        isOver 
-          ? 'border-[#0a4373] bg-[#0a4373]/5' 
-          : isColumnDragging
-          ? 'border-blue-300 bg-blue-50/50'
-          : 'border-slate-200 bg-slate-50/50'
-      }`}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div
-            {...columnAttributes}
-            {...columnListeners}
-            className="cursor-grab active:cursor-grabbing p-2 hover:bg-slate-200 rounded-lg transition-colors"
-            title="Drag to reorder column"
-          >
-            <GripVertical className="w-4 h-4 text-slate-400" />
-          </div>
-          <div className="text-center text-sm text-slate-500">
-            {blocks.length === 0 ? 'Drop content blocks here' : `Column ${column.id.split('-')[1]}`}
-          </div>
-        </div>
-        {onRemoveColumn && totalColumns > 1 && (
-          <button
-            type="button"
-            onClick={() => onRemoveColumn(column.id)}
-            className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-            title="Remove this column"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-      <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-        <div className="space-y-4">
-          {blocks.map((block) => (
-            <DraggableBlock
-              key={block.id}
-              block={block}
-              onUpdate={onUpdate}
-              onDelete={onDelete}
-            />
-          ))}
-        </div>
-      </SortableContext>
-    </div>
-  )
-}
 
 export default function EditCaseStudy() {
   const router = useRouter()
@@ -792,7 +432,6 @@ export default function EditCaseStudy() {
   })
   const [activeId, setActiveId] = useState<string | null>(null)
   const [mediaType, setMediaType] = useState<MediaType>(MediaType.IMAGE_ONLY)
-  const [featuredImage, setFeaturedImage] = useState<File | null>(null)
   const [featuredImageUrl, setFeaturedImageUrl] = useState<string>('')
   const [featuredVideo, setFeaturedVideo] = useState<string>('')
 
@@ -969,21 +608,6 @@ export default function EditCaseStudy() {
     setLayoutBlocks(prev => [...prev, newColumn])
   }
 
-  const removeColumn = (columnId: string) => {
-    if (currentLayout.columns.length <= 1) return // Don't allow removing the last column
-    
-    // Move blocks from the removed column to available blocks
-    const columnToRemove = currentLayout.columns.find(col => col.id === columnId)
-    if (columnToRemove && columnToRemove.blocks.length > 0) {
-      setAvailableBlocks(prev => [...prev, ...columnToRemove.blocks])
-    }
-    
-    setCurrentLayout(prev => ({
-      ...prev,
-      type: Math.min(Math.max(prev.columns.length - 1, 1), 3) as 1 | 2 | 3,
-      columns: prev.columns.filter(col => col.id !== columnId)
-    }))
-  }
 
   // Drag and Drop Handlers
   const handleDragStart = (event: DragStartEvent) => {
