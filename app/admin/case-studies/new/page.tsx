@@ -402,8 +402,6 @@ const AvailableBlocksContainer: React.FC<AvailableBlocksContainerProps> = ({ blo
     id: 'available',
   })
 
-  if (blocks.length === 0) return null
-
   return (
     <div
       ref={setNodeRef}
@@ -411,19 +409,28 @@ const AvailableBlocksContainer: React.FC<AvailableBlocksContainerProps> = ({ blo
         isOver ? 'border-[#0a4373] bg-[#0a4373]/5' : ''
       }`}
     >
-      <h3 className="text-sm font-medium text-slate-700 mb-3">Available Blocks</h3>
-      <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-        <div className="space-y-3">
-          {blocks.map((block) => (
-            <DraggableBlock
-              key={block.id}
-              block={block}
-              onUpdate={onUpdate}
-              onDelete={onDelete}
-            />
-          ))}
+      <h3 className="text-sm font-medium text-slate-700 mb-3">
+        Available Blocks ({blocks.length})
+      </h3>
+      {blocks.length > 0 ? (
+        <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-3">
+            {blocks.map((block) => (
+              <DraggableBlock
+                key={block.id}
+                block={block}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      ) : (
+        <div className="text-center py-8 text-slate-500">
+          <FileText className="mx-auto h-8 w-8 text-slate-300 mb-2" />
+          <p className="text-sm">No content blocks yet. Add blocks using the buttons above.</p>
         </div>
-      </SortableContext>
+      )}
     </div>
   )
 }

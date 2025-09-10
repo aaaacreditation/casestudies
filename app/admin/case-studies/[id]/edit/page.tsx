@@ -447,7 +447,12 @@ export default function EditCaseStudy() {
       content: type === 'title' ? 'New Title' : type === 'text' ? 'New text content...' : '',
       titleLevel: type === 'title' ? 2 : undefined
     }
-    setAvailableBlocks(prev => [...prev, newBlock])
+    console.log('Adding content block to available blocks:', newBlock)
+    setAvailableBlocks(prev => {
+      const updated = [...prev, newBlock]
+      console.log('Updated available blocks:', updated)
+      return updated
+    })
   }
 
   const updateContentBlock = (id: string, updates: Partial<ContentBlock>) => {
@@ -1104,9 +1109,11 @@ export default function EditCaseStudy() {
                       </div>
 
                       {/* Available Blocks */}
-                      {availableBlocks.length > 0 && (
-                        <div className="bg-white border border-slate-200 rounded-lg p-4">
-                          <h4 className="text-sm font-medium text-slate-700 mb-3">Available Content Blocks</h4>
+                      <div className="bg-white border border-slate-200 rounded-lg p-4">
+                        <h4 className="text-sm font-medium text-slate-700 mb-3">
+                          Available Content Blocks ({availableBlocks.length})
+                        </h4>
+                        {availableBlocks.length > 0 ? (
                           <SortableContext items={availableBlocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
                             <div className="space-y-4">
                               {availableBlocks.map((block) => (
@@ -1119,8 +1126,13 @@ export default function EditCaseStudy() {
                               ))}
                             </div>
                           </SortableContext>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="text-center py-8 text-slate-500">
+                            <FileText className="mx-auto h-8 w-8 text-slate-300 mb-2" />
+                            <p className="text-sm">No content blocks yet. Add blocks using the buttons above.</p>
+                          </div>
+                        )}
+                      </div>
 
                       {/* Layout Grid */}
                       <div className="bg-white border border-slate-200 rounded-lg p-4">
