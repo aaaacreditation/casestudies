@@ -356,48 +356,327 @@ interface AvailableBlocksContainerProps {
   onDelete: (id: string) => void
 }
 
-const AvailableBlocksContainer: React.FC<AvailableBlocksContainerProps> = ({ blocks, onUpdate, onDelete }) => {
-  const { setNodeRef, isOver } = useDroppable({ id: 'available' })
+// Simple Content Editor - no confusing "Available Blocks", just direct editing
+interface SimpleContentEditorProps {
+  blocks: ContentBlock[]
+  onUpdate: (id: string, updates: Partial<ContentBlock>) => void
+  onDelete: (id: string) => void
+  onReorder: (blocks: ContentBlock[]) => void
+}
 
+const SimpleContentEditor: React.FC<SimpleContentEditorProps> = ({ blocks, onUpdate, onDelete }) => {
   return (
-    <div
-      ref={setNodeRef}
-      className={`bg-white border border-slate-200 rounded-lg p-4 transition-colors ${
-        isOver ? 'border-[#0a4373] bg-[#0a4373]/5' : ''
-      }`}
-    >
-      <h4 className="text-sm font-medium text-slate-700 mb-3">
-        Available Content Blocks ({blocks.length})
-      </h4>
+    <div className="min-h-[400px]">
       {blocks.length > 0 ? (
         <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-4">
-            {blocks.map((block) => (
-              <DraggableBlock
-                key={block.id}
-                block={block}
-                onUpdate={onUpdate}
-                onDelete={onDelete}
-              />
-            ))}
+            {blocks.map((block) => {
+              if (block.type === 'column') {
+                return (
+                  <EditableColumn
+                    key={block.id}
+                    column={block}
+                    onUpdate={onUpdate}
+                    onDelete={onDelete}
+                  />
+                )
+              } else {
+                return (
+                  <EditableBlock
+                    key={block.id}
+                    block={block}
+                    onUpdate={onUpdate}
+                    onDelete={onDelete}
+                  />
+                )
+              }
+            })}
           </div>
         </SortableContext>
       ) : (
-        <div className="text-center py-8 text-slate-500">
-          <FileText className="mx-auto h-8 w-8 text-slate-300 mb-2" />
-          <p className="text-sm">No content blocks yet. Add blocks using the buttons above.</p>
+        <div className="text-center py-16 text-slate-500">
+          <FileText className="mx-auto h-16 w-16 text-slate-300 mb-4" />
+          <h3 className="text-lg font-medium mb-2">No content yet</h3>
+          <p className="text-sm">Click the buttons above to add titles, text, images, videos, or columns.</p>
         </div>
       )}
     </div>
   )
 }
 
-// Simple Column Container - acts like a draggable block but can accept drops
-interface SimpleColumnContainerProps {
+// Editable Column - can be dragged and can accept dropped content
+interface EditableColumnProps {
   column: ContentBlock
   onUpdate: (id: string, updates: Partial<ContentBlock>) => void
   onDelete: (id: string) => void
-  onMoveToAvailable: (block: ContentBlock) => void
+}
+
+const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDelete }) => {
+  // Make the column itself draggable
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setSortableRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: column.id })
+
+  // Make the column content area droppable
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({ 
+    id: `column-${column.id}` 
+  })
+
+  const columnBlocks = column.blocks || []
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1
+  }
+
+  return (
+    <div
+      ref={setSortableRef}
+      style={style}
+      className={`border-2 border-indigo-200 rounded-lg bg-indigo-50 ${isDragging ? 'shadow-lg' : ''}`}
+    >
+      {/* Column Header */}
+      <div className="flex items-center justify-between p-4 border-b border-indigo-200 bg-indigo-100">
+        <div className="flex items-center gap-3">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-2 hover:bg-indigo-200 rounded-lg"
+            title="Drag to reorder column"
+          >
+            <GripVertical className="w-5 h-5 text-indigo-600" />
+          </div>
+          <LayoutGrid className="w-5 h-5 text-indigo-600" />
+          <input
+            type="text"
+            value={column.content || ''}
+            onChange={(e) => onUpdate(column.id, { content: e.target.value })}
+            placeholder="Column Title"
+            className="bg-transparent text-lg font-semibold text-indigo-800 border-none outline-none flex-1"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => onDelete(column.id)}
+          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors"
+          title="Delete column"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Droppable Column Content */}
+      <div
+        ref={setDroppableRef}
+        className={`min-h-[200px] p-4 transition-colors ${
+          isOver ? 'bg-blue-50 border-2 border-dashed border-blue-400' : ''
+        }`}
+      >
+        {columnBlocks.length > 0 ? (
+          <div className="space-y-3">
+            {columnBlocks.map((block) => (
+              <div key={block.id} className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    {block.type === 'text' && <FileText className="w-4 h-4 text-blue-600" />}
+                    {block.type === 'title' && <Type className="w-4 h-4 text-orange-600" />}
+                    {block.type === 'image' && <ImageIcon className="w-4 h-4 text-green-600" />}
+                    {block.type === 'video' && <Video className="w-4 h-4 text-purple-600" />}
+                    <span className="text-sm font-medium text-slate-700 capitalize">
+                      {block.type === 'title' ? `H${block.titleLevel || 1} Title` : `${block.type}`}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Remove from column
+                      const updatedBlocks = columnBlocks.filter(b => b.id !== block.id)
+                      onUpdate(column.id, { blocks: updatedBlocks })
+                    }}
+                    className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
+                    title="Remove from column"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="text-sm text-slate-600">
+                  {block.content || 'No content'}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 text-slate-400 border-2 border-dashed border-slate-300 rounded-lg">
+            <Plus className="mx-auto h-12 w-12 text-slate-300 mb-3" />
+            <p className="text-lg font-medium mb-1">Drop content here</p>
+            <p className="text-sm">Drag titles, text, images, or videos into this column</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Editable Block - simple content block that can be dragged
+interface EditableBlockProps {
+  block: ContentBlock
+  onUpdate: (id: string, updates: Partial<ContentBlock>) => void
+  onDelete: (id: string) => void
+}
+
+const EditableBlock: React.FC<EditableBlockProps> = ({ block, onUpdate, onDelete }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: block.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`border border-slate-200 rounded-lg bg-white p-4 ${isDragging ? 'shadow-lg' : ''}`}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-2 hover:bg-slate-100 rounded-lg"
+          >
+            <GripVertical className="w-4 h-4 text-slate-400" />
+          </div>
+          {block.type === 'text' && <FileText className="w-5 h-5 text-blue-600" />}
+          {block.type === 'title' && <Type className="w-5 h-5 text-orange-600" />}
+          {block.type === 'image' && <ImageIcon className="w-5 h-5 text-green-600" />}
+          {block.type === 'video' && <Video className="w-5 h-5 text-purple-600" />}
+          <span className="text-sm font-medium text-slate-700 capitalize">
+            {block.type === 'title' ? `H${block.titleLevel || 1} Title` : `${block.type} Block`}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => onDelete(block.id)}
+          className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
+          title="Delete block"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Block Content */}
+      <div>
+        {block.type === 'title' && (
+          <div className="space-y-3">
+            <select
+              value={block.titleLevel || 2}
+              onChange={(e) => onUpdate(block.id, { titleLevel: parseInt(e.target.value) as 1 | 2 | 3 | 4 | 5 | 6 })}
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+            >
+              {[1, 2, 3, 4, 5, 6].map(level => (
+                <option key={level} value={level}>H{level} - {level === 1 ? 'Main Title' : level === 2 ? 'Section Title' : level === 3 ? 'Subsection' : `Heading ${level}`}</option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={block.content || ''}
+              onChange={(e) => onUpdate(block.id, { content: e.target.value })}
+              placeholder="Enter title text"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-lg font-semibold"
+            />
+          </div>
+        )}
+
+        {block.type === 'text' && (
+          <RichTextEditor
+            value={block.content || ''}
+            onChange={(value) => onUpdate(block.id, { content: value })}
+            placeholder="Enter your text content..."
+          />
+        )}
+
+        {block.type === 'image' && (
+          <div className="space-y-3">
+            {(block.fileUrl || block.url) && (
+              <div className="relative">
+                <img
+                  src={block.fileUrl || block.url}
+                  alt={block.caption || 'Content image'}
+                  className="w-full h-48 object-cover rounded-lg border border-slate-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => onUpdate(block.id, { fileUrl: '', url: '', file: undefined })}
+                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
+                  title="Remove image"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) onUpdate(block.id, { file, url: undefined })
+              }}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+            />
+            <div className="text-center text-xs text-slate-400">or</div>
+            <input
+              type="url"
+              value={block.url || ''}
+              onChange={(e) => onUpdate(block.id, { url: e.target.value })}
+              placeholder="Enter image URL"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+            />
+            <input
+              type="text"
+              value={block.caption || ''}
+              onChange={(e) => onUpdate(block.id, { caption: e.target.value })}
+              placeholder="Image caption (optional)"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+            />
+          </div>
+        )}
+
+        {block.type === 'video' && (
+          <div className="space-y-3">
+            <input
+              type="url"
+              value={block.url || ''}
+              onChange={(e) => onUpdate(block.id, { url: e.target.value })}
+              placeholder="YouTube URL or video file URL"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+            />
+            <input
+              type="text"
+              value={block.caption || ''}
+              onChange={(e) => onUpdate(block.id, { caption: e.target.value })}
+              placeholder="Video caption (optional)"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 const SimpleColumnContainer: React.FC<SimpleColumnContainerProps> = ({ column, onUpdate, onDelete, onMoveToAvailable }) => {
@@ -717,12 +996,8 @@ export default function EditCaseStudy() {
       content: type === 'title' ? 'New Title' : type === 'text' ? 'New text content...' : '',
       titleLevel: type === 'title' ? 2 : undefined
     }
-    console.log('Adding content block to available blocks:', newBlock)
-    setAvailableBlocks(prev => {
-      const updated = [...prev, newBlock]
-      console.log('Updated available blocks:', updated)
-      return updated
-    })
+    console.log('Adding content block directly to layout:', newBlock)
+    setLayoutBlocks(prev => [...prev, newBlock])
   }
 
   const updateContentBlock = (id: string, updates: Partial<ContentBlock>) => {
@@ -798,11 +1073,11 @@ export default function EditCaseStudy() {
     const newColumn: ContentBlock = {
       id: generateId(),
       type: 'column',
-      content: `Column ${availableBlocks.filter(b => b.type === 'column').length + 1}`,
+      content: `Column ${layoutBlocks.filter(b => b.type === 'column').length + 1}`,
       blocks: [] // Column-specific property to hold nested content
     }
     
-    setAvailableBlocks(prev => [...prev, newColumn])
+    setLayoutBlocks(prev => [...prev, newColumn])
   }
 
   const removeColumn = (columnId: string) => {
@@ -866,10 +1141,10 @@ export default function EditCaseStudy() {
       return
     }
 
-    // Handle dropping into a column content area
-    if (overId.startsWith('column-content-')) {
-      const columnId = overId.replace('column-content-', '')
-      console.log('Dropping into column content:', columnId)
+    // Handle dropping into a column
+    if (overId.startsWith('column-')) {
+      const columnId = overId.replace('column-', '')
+      console.log('Dropping into column:', columnId)
       
       // Don't allow dropping columns into columns
       if (activeBlock.type === 'column') {
@@ -877,44 +1152,42 @@ export default function EditCaseStudy() {
         return
       }
       
-      // Remove from current location
-      if (availableBlocks.find(b => b.id === activeId)) {
-        setAvailableBlocks(prev => prev.filter(b => b.id !== activeId))
-      } else if (layoutBlocks.find(b => b.id === activeId)) {
-        setLayoutBlocks(prev => prev.filter(b => b.id !== activeId))
-      } else {
-        // Remove from another column
-        setLayoutBlocks(prev => prev.map(block => 
+      // Remove from current location in layout
+      setLayoutBlocks(prev => {
+        // Remove the block from main layout
+        const filteredBlocks = prev.filter(b => b.id !== activeId)
+        
+        // Remove from any column it might be in
+        const updatedBlocks = filteredBlocks.map(block => 
           block.type === 'column' && block.blocks
             ? { ...block, blocks: block.blocks.filter(b => b.id !== activeId) }
             : block
-        ))
-      }
-      
-      // Add to target column
-      setLayoutBlocks(prev => prev.map(block => 
-        block.id === columnId && block.type === 'column'
-          ? { ...block, blocks: [...(block.blocks || []), activeBlock] }
-          : block
-      ))
+        )
+        
+        // Add to target column
+        return updatedBlocks.map(block => 
+          block.id === columnId && block.type === 'column'
+            ? { ...block, blocks: [...(block.blocks || []), activeBlock] }
+            : block
+        )
+      })
       return
     }
 
-    // Handle dropping back to available blocks
-    if (overId === 'available') {
-      // Remove from layout blocks
-      if (layoutBlocks.find(b => b.id === activeId)) {
-        setLayoutBlocks(prev => prev.filter(b => b.id !== activeId))
-        setAvailableBlocks(prev => [...prev, activeBlock])
-      } else {
-        // Remove from column and add to available blocks
-        setLayoutBlocks(prev => prev.map(block => 
-          block.type === 'column' && block.blocks
-            ? { ...block, blocks: block.blocks.filter(b => b.id !== activeId) }
-            : block
-        ))
-        setAvailableBlocks(prev => [...prev, activeBlock])
-      }
+    // Handle reordering within layout blocks
+    if (layoutBlocks.find(b => b.id === activeId) && layoutBlocks.find(b => b.id === overId)) {
+      setLayoutBlocks(prev => {
+        const items = [...prev]
+        const activeIndex = items.findIndex(item => item.id === activeId)
+        const overIndex = items.findIndex(item => item.id === overId)
+        
+        if (activeIndex !== -1 && overIndex !== -1) {
+          const [reorderedItem] = items.splice(activeIndex, 1)
+          items.splice(overIndex, 0, reorderedItem)
+        }
+        
+        return items
+      })
       return
     }
 
@@ -1449,80 +1722,59 @@ export default function EditCaseStudy() {
                         </div>
                       </div>
 
-                      {/* Content Block Tools */}
-                      <div className="bg-slate-50 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="text-sm font-medium text-slate-700">Add Content Blocks</h4>
-                          <button
-                            type="button"
-                            onClick={addColumn}
-                            className="flex items-center gap-2 px-3 py-2 bg-indigo-100 text-indigo-800 rounded-lg hover:bg-indigo-200 transition-colors text-sm font-medium"
-                            title="Add a new column to the layout"
-                          >
-                            <Plus className="w-4 h-4" />
-                            Add Column
-                          </button>
-                        </div>
-                        <div className="flex gap-2 flex-wrap">
-                          <button
-                            type="button"
-                            onClick={() => addContentBlock('title')}
-                            className="flex items-center gap-2 px-3 py-2 bg-orange-100 text-orange-800 rounded-lg hover:bg-orange-200 transition-colors text-sm"
-                          >
-                            <Type className="w-4 h-4" />
-                            Title
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => addContentBlock('text')}
-                            className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors text-sm"
-                          >
-                            <FileText className="w-4 h-4" />
-                            Text
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => addContentBlock('image')}
-                            className="flex items-center gap-2 px-3 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors text-sm"
-                          >
-                            <ImageIcon className="w-4 h-4" />
-                            Image
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => addContentBlock('video')}
-                            className="flex items-center gap-2 px-3 py-2 bg-purple-100 text-purple-800 rounded-lg hover:bg-purple-200 transition-colors text-sm"
-                          >
-                            <Video className="w-4 h-4" />
-                            Video
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Available Blocks */}
-                      <AvailableBlocksContainer 
-                        blocks={availableBlocks} 
-                        onUpdate={updateContentBlock} 
-                        onDelete={deleteContentBlock} 
-                      />
-
-                      {/* Simple Layout Area */}
+                      {/* Content Editor */}
                       <div className="bg-white border border-slate-200 rounded-lg p-4">
-                        <h4 className="text-sm font-medium text-slate-700 mb-3">Layout Preview ({layoutBlocks.length} items)</h4>
-                        <LayoutDropArea 
-                          blocks={layoutBlocks} 
-                          onUpdate={updateContentBlock} 
-                          onDelete={(blockId) => {
-                            // Remove from layout and add back to available
-                            const blockToRemove = layoutBlocks.find(b => b.id === blockId)
-                            if (blockToRemove) {
-                              setLayoutBlocks(prev => prev.filter(b => b.id !== blockId))
-                              setAvailableBlocks(prev => [...prev, blockToRemove])
-                            }
-                          }}
-                          onMoveToAvailable={(block) => {
-                            setAvailableBlocks(prev => [...prev, block])
-                          }}
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-sm font-medium text-slate-700">Content Builder</h4>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => addContentBlock('title')}
+                              className="flex items-center gap-2 px-3 py-2 bg-orange-100 text-orange-800 rounded-lg hover:bg-orange-200 transition-colors text-sm"
+                            >
+                              <Type className="w-4 h-4" />
+                              Title
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => addContentBlock('text')}
+                              className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors text-sm"
+                            >
+                              <FileText className="w-4 h-4" />
+                              Text
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => addContentBlock('image')}
+                              className="flex items-center gap-2 px-3 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors text-sm"
+                            >
+                              <ImageIcon className="w-4 h-4" />
+                              Image
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => addContentBlock('video')}
+                              className="flex items-center gap-2 px-3 py-2 bg-purple-100 text-purple-800 rounded-lg hover:bg-purple-200 transition-colors text-sm"
+                            >
+                              <Video className="w-4 h-4" />
+                              Video
+                            </button>
+                            <button
+                              type="button"
+                              onClick={addColumn}
+                              className="flex items-center gap-2 px-3 py-2 bg-indigo-100 text-indigo-800 rounded-lg hover:bg-indigo-200 transition-colors text-sm font-medium"
+                            >
+                              <LayoutGrid className="w-4 h-4" />
+                              Column
+                            </button>
+                          </div>
+                        </div>
+
+                        <SimpleContentEditor 
+                          blocks={layoutBlocks}
+                          onUpdate={updateContentBlock}
+                          onDelete={deleteContentBlock}
+                          onReorder={setLayoutBlocks}
                         />
                       </div>
 
