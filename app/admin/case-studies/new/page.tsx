@@ -42,6 +42,7 @@ import {
 import {
   SortableContext,
   verticalListSortingStrategy,
+  horizontalListSortingStrategy,
   useSortable
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -1247,7 +1248,7 @@ export default function NewCaseStudy() {
                           <h3 className="text-sm font-medium text-slate-700 mb-3">Layout Preview</h3>
                           <SortableContext 
                             items={currentLayout.columns.map(col => `column-draggable-${col.id}`)} 
-                            strategy={verticalListSortingStrategy}
+                            strategy={horizontalListSortingStrategy}
                           >
                             <div className={`grid gap-4 items-start ${
                               currentLayout.type === 1 ? 'grid-cols-1' :

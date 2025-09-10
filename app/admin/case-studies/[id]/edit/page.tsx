@@ -41,6 +41,7 @@ import {
 import {
   SortableContext,
   verticalListSortingStrategy,
+  horizontalListSortingStrategy,
   useSortable
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -104,7 +105,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
     <div
       ref={setNodeRef}
       style={style}
-      className={`border border-slate-200 rounded-lg bg-white ${isDragging ? 'shadow-lg' : ''}`}
+      className={`border border-slate-200 rounded-lg bg-white overflow-hidden ${isDragging ? 'shadow-lg' : ''}`}
     >
       <div className="flex items-center justify-between p-3 bg-slate-50 rounded-t-lg">
         <div className="flex items-center gap-2">
@@ -132,7 +133,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
         </button>
       </div>
       
-      <div className="p-4">
+      <div className="p-4 overflow-hidden">
         {block.type === 'title' && (
           <div className="space-y-3">
             <div>
@@ -156,14 +157,14 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
               value={block.content || ''}
               onChange={(e) => onUpdate(block.id, { content: e.target.value })}
               placeholder="Enter title text..."
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm resize-none"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm resize-none break-words"
               rows={2}
             />
           </div>
         )}
 
         {block.type === 'text' && (
-          <div className="h-48">
+          <div className="h-48 overflow-hidden">
             <RichTextEditor
               value={block.content || ''}
               onChange={(content) => onUpdate(block.id, { content })}
@@ -190,7 +191,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
               value={block.caption || ''}
               onChange={(e) => onUpdate(block.id, { caption: e.target.value })}
               placeholder="Image caption (optional)"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm break-words"
             />
           </div>
         )}
@@ -202,14 +203,14 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
               value={block.url || ''}
               onChange={(e) => onUpdate(block.id, { url: e.target.value })}
               placeholder="YouTube URL or video file URL"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm break-all"
             />
             <input
               type="text"
               value={block.caption || ''}
               onChange={(e) => onUpdate(block.id, { caption: e.target.value })}
               placeholder="Video caption (optional)"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm break-words"
             />
           </div>
         )}
@@ -1095,7 +1096,7 @@ export default function EditCaseStudy() {
                         <h4 className="text-sm font-medium text-slate-700 mb-3">Layout Preview</h4>
                         <SortableContext 
                           items={currentLayout.columns.map(col => `column-draggable-${col.id}`)} 
-                          strategy={verticalListSortingStrategy}
+                          strategy={horizontalListSortingStrategy}
                         >
                           <div className={`grid gap-4 items-start ${
                             currentLayout.type === 1 ? 'grid-cols-1' :
