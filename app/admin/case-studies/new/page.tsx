@@ -353,7 +353,7 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, blocks, onUpd
     <div
       ref={setNodeRef}
       style={columnStyle}
-      className={`w-full min-h-[400px] border-2 border-dashed rounded-lg p-4 transition-colors ${
+      className={`flex-1 min-h-[400px] border-2 border-dashed rounded-lg p-4 transition-colors ${
         isOver 
           ? 'border-[#0a4373] bg-[#0a4373]/5' 
           : isColumnDragging
@@ -1251,18 +1251,24 @@ export default function NewCaseStudy() {
                             items={currentLayout.columns.map(col => `column-draggable-${col.id}`)} 
                             strategy={horizontalListSortingStrategy}
                           >
-                            <div className={`grid gap-4 items-start ${
-                              currentLayout.type === 1 ? 'grid-cols-1' :
-                              currentLayout.type === 2 ? 'grid-cols-2' : 'grid-cols-3'
+                            <div className={`flex gap-4 ${
+                              currentLayout.type === 1 ? 'flex-col' : 'flex-row'
                             }`}>
                               {currentLayout.columns.map((column) => (
-                                <DroppableColumn
-                                  key={column.id}
-                                  column={column}
-                                  blocks={column.blocks}
-                                  onUpdate={updateContentBlock}
-                                  onDelete={deleteContentBlock}
-                                />
+                                <div 
+                                  key={column.id} 
+                                  className={`${
+                                    currentLayout.type === 1 ? 'w-full' :
+                                    currentLayout.type === 2 ? 'flex-1 min-w-0' : 'flex-1 min-w-0'
+                                  }`}
+                                >
+                                  <DroppableColumn
+                                    column={column}
+                                    blocks={column.blocks}
+                                    onUpdate={updateContentBlock}
+                                    onDelete={deleteContentBlock}
+                                  />
+                                </div>
                               ))}
                             </div>
                           </SortableContext>
