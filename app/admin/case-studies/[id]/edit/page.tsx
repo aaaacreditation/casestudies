@@ -624,9 +624,9 @@ export default function EditCaseStudy() {
     const overId = over.id as string
 
     // Find the active block
-    let activeBlock = availableBlocks.find(b => b.id === activeId) || 
-                     layoutBlocks.find(b => b.id === activeId) ||
-                     currentLayout.columns.flatMap(col => col.blocks).find(b => b.id === activeId)
+    const activeBlock = availableBlocks.find(b => b.id === activeId) || 
+                       layoutBlocks.find(b => b.id === activeId) ||
+                       currentLayout.columns.flatMap(col => col.blocks).find(b => b.id === activeId)
 
     if (!activeBlock) return
 
