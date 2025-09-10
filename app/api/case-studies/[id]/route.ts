@@ -53,16 +53,38 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
 
+    // Extract company data if present
+    const { company: companyData, ...caseStudyData } = body
+
+    // Update case study
     const caseStudy = await prisma.caseStudy.update({
       where: { id },
-      data: body,
+      data: caseStudyData,
       include: {
         company: true,
         media: true
       }
     })
 
-    return NextResponse.json(caseStudy)
+    // Update company data if provided
+    if (companyData && caseStudy.companyId) {
+      await prisma.company.update({
+        where: { id: caseStudy.companyId },
+        data: companyData
+      })
+    }
+
+    // Fetch updated case study with company data
+    const updatedCaseStudy = await prisma.caseStudy.findUnique({
+      where: { id },
+      include: {
+        company: true,
+        media: true,
+        testimonials: true
+      }
+    })
+
+    return NextResponse.json(updatedCaseStudy)
   } catch (error) {
     console.error('Error updating case study:', error)
     return NextResponse.json(

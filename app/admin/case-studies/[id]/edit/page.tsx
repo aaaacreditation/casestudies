@@ -36,6 +36,7 @@ import {
   useSensor,
   useSensors,
   closestCorners,
+  closestCenter,
   useDroppable
 } from '@dnd-kit/core'
 import {
@@ -1003,7 +1004,7 @@ export default function EditCaseStudy() {
                 <div className="mt-8 border-t border-slate-200 pt-8">
                   <DndContext
                     sensors={sensors}
-                    collisionDetection={closestCorners}
+                    collisionDetection={closestCenter}
                     onDragStart={handleDragStart}
                     onDragOver={handleDragOver}
                     onDragEnd={handleDragEnd}
