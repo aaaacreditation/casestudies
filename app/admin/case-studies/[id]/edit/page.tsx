@@ -400,8 +400,11 @@ const AvailableBlocksContainer: React.FC<AvailableBlocksContainerProps> = ({ blo
 }
 
 const LayoutColumn: React.FC<LayoutColumnProps> = ({ column, onUpdate, onDelete }) => {
-  const { setNodeRef, isOver } = useDroppable({ id: `layout-column-${column.id}` })
+  const droppableId = `layout-column-${column.id}`
+  const { setNodeRef, isOver } = useDroppable({ id: droppableId })
   const columnBlocks = column.blocks || []
+  
+  console.log('LayoutColumn rendered with droppableId:', droppableId, 'column:', column)
 
   return (
     <div className="space-y-2">
@@ -769,6 +772,8 @@ export default function EditCaseStudy() {
 
   // Drag and Drop Handlers
   const handleDragStart = (event: DragStartEvent) => {
+    console.log('Drag started:', event.active.id)
+    console.log('Available layout blocks:', layoutBlocks)
     setActiveId(event.active.id as string)
   }
 
@@ -1357,7 +1362,7 @@ export default function EditCaseStudy() {
                 <div className="mt-8 border-t border-slate-200 pt-8">
                   <DndContext
                     sensors={sensors}
-                    collisionDetection={rectIntersection}
+                    collisionDetection={pointerWithin}
                     onDragStart={handleDragStart}
                     onDragOver={handleDragOver}
                     onDragEnd={handleDragEnd}
