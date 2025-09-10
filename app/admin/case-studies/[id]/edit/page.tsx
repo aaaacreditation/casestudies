@@ -38,6 +38,8 @@ import {
   useSensors,
   closestCorners,
   closestCenter,
+  rectIntersection,
+  pointerWithin,
   useDroppable
 } from '@dnd-kit/core'
 import {
@@ -352,6 +354,49 @@ interface LayoutColumnProps {
   column: ContentBlock
   onUpdate: (id: string, updates: Partial<ContentBlock>) => void
   onDelete: (id: string) => void
+}
+
+// Available Blocks Container Component
+interface AvailableBlocksContainerProps {
+  blocks: ContentBlock[]
+  onUpdate: (id: string, updates: Partial<ContentBlock>) => void
+  onDelete: (id: string) => void
+}
+
+const AvailableBlocksContainer: React.FC<AvailableBlocksContainerProps> = ({ blocks, onUpdate, onDelete }) => {
+  const { setNodeRef, isOver } = useDroppable({ id: 'available' })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`bg-white border border-slate-200 rounded-lg p-4 transition-colors ${
+        isOver ? 'border-[#0a4373] bg-[#0a4373]/5' : ''
+      }`}
+    >
+      <h4 className="text-sm font-medium text-slate-700 mb-3">
+        Available Content Blocks ({blocks.length})
+      </h4>
+      {blocks.length > 0 ? (
+        <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-4">
+            {blocks.map((block) => (
+              <DraggableBlock
+                key={block.id}
+                block={block}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      ) : (
+        <div className="text-center py-8 text-slate-500">
+          <FileText className="mx-auto h-8 w-8 text-slate-300 mb-2" />
+          <p className="text-sm">No content blocks yet. Add blocks using the buttons above.</p>
+        </div>
+      )}
+    </div>
+  )
 }
 
 const LayoutColumn: React.FC<LayoutColumnProps> = ({ column, onUpdate, onDelete }) => {
@@ -740,13 +785,20 @@ export default function EditCaseStudy() {
     const activeId = active.id as string
     const overId = over.id as string
 
+    console.log('Drag end:', { activeId, overId })
+
     // Find the active block
     const activeBlock = availableBlocks.find(b => b.id === activeId) || 
                        layoutBlocks.find(b => b.id === activeId) ||
                        layoutBlocks.flatMap(block => block.type === 'column' && block.blocks ? block.blocks : []).find(b => b.id === activeId) ||
                        currentLayout.columns.flatMap(col => col.blocks).find(b => b.id === activeId)
 
-    if (!activeBlock) return
+    console.log('Found activeBlock:', activeBlock)
+
+    if (!activeBlock) {
+      console.log('No activeBlock found, returning')
+      return
+    }
 
     // Handle dropping into the layout area
     if (overId === 'layout') {
@@ -761,6 +813,7 @@ export default function EditCaseStudy() {
     // Handle dropping into a column
     if (overId.startsWith('layout-column-')) {
       const columnId = overId.replace('layout-column-', '')
+      console.log('Dropping into column:', columnId)
       
       // Remove from current location
       if (availableBlocks.find(b => b.id === activeId)) {
@@ -1304,7 +1357,7 @@ export default function EditCaseStudy() {
                 <div className="mt-8 border-t border-slate-200 pt-8">
                   <DndContext
                     sensors={sensors}
-                    collisionDetection={closestCenter}
+                    collisionDetection={rectIntersection}
                     onDragStart={handleDragStart}
                     onDragOver={handleDragOver}
                     onDragEnd={handleDragEnd}
@@ -1385,30 +1438,11 @@ export default function EditCaseStudy() {
                       </div>
 
                       {/* Available Blocks */}
-                      <div className="bg-white border border-slate-200 rounded-lg p-4">
-                        <h4 className="text-sm font-medium text-slate-700 mb-3">
-                          Available Content Blocks ({availableBlocks.length})
-                        </h4>
-                        {availableBlocks.length > 0 ? (
-                          <SortableContext items={availableBlocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-                            <div className="space-y-4">
-                              {availableBlocks.map((block) => (
-                                <DraggableBlock
-                                  key={block.id}
-                                  block={block}
-                                  onUpdate={updateContentBlock}
-                                  onDelete={deleteContentBlock}
-                                />
-                              ))}
-                            </div>
-                          </SortableContext>
-                        ) : (
-                          <div className="text-center py-8 text-slate-500">
-                            <FileText className="mx-auto h-8 w-8 text-slate-300 mb-2" />
-                            <p className="text-sm">No content blocks yet. Add blocks using the buttons above.</p>
-                          </div>
-                        )}
-                      </div>
+                      <AvailableBlocksContainer 
+                        blocks={availableBlocks} 
+                        onUpdate={updateContentBlock} 
+                        onDelete={deleteContentBlock} 
+                      />
 
                       {/* Simple Layout Area */}
                       <div className="bg-white border border-slate-200 rounded-lg p-4">
