@@ -611,64 +611,7 @@ export default function EditCaseStudy() {
   }
 
   const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event
-    
-    if (!over) return
-    
-    const activeId = active.id as string
-    const overId = over.id as string
-    
-    // Find the active item
-    const activeBlock = availableBlocks.find(block => block.id === activeId) ||
-      layoutBlocks.find(block => block.id === activeId) ||
-      currentLayout.columns.flatMap(col => col.blocks).find(block => block.id === activeId)
-    
-    if (!activeBlock) return
-    
-    // Handle dropping into the simple layout area
-    if (overId === 'layout') {
-      // Remove from current location
-      if (availableBlocks.find(block => block.id === activeId)) {
-        setAvailableBlocks(prev => prev.filter(block => block.id !== activeId))
-      } else if (layoutBlocks.find(block => block.id === activeId)) {
-        return // Already in layout
-      } else {
-        // Remove from old complex layout
-        setCurrentLayout(prev => ({
-          ...prev,
-          columns: prev.columns.map(col => ({
-            ...col,
-            blocks: col.blocks.filter(block => block.id !== activeId)
-          }))
-        }))
-      }
-      
-      // Add to layout blocks
-      if (!layoutBlocks.find(block => block.id === activeId)) {
-        setLayoutBlocks(prev => [...prev, activeBlock])
-      }
-    }
-    
-    // Handle dropping back to available blocks
-    if (overId === 'available') {
-      // Remove from current location
-      if (layoutBlocks.find(block => block.id === activeId)) {
-        setLayoutBlocks(prev => prev.filter(block => block.id !== activeId))
-      } else {
-        setCurrentLayout(prev => ({
-          ...prev,
-          columns: prev.columns.map(col => ({
-            ...col,
-            blocks: col.blocks.filter(block => block.id !== activeId)
-          }))
-        }))
-      }
-      
-      // Add to available blocks
-      if (!availableBlocks.find(block => block.id === activeId)) {
-        setAvailableBlocks(prev => [...prev, activeBlock])
-      }
-    }
+    // Just provide visual feedback during drag - actual positioning happens in handleDragEnd
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -680,63 +623,65 @@ export default function EditCaseStudy() {
     const activeId = active.id as string
     const overId = over.id as string
 
-    // Handle column reordering
-    if (activeId.startsWith('column-draggable-') && overId.startsWith('column-draggable-')) {
-      const activeColumnId = activeId.replace('column-draggable-', '')
-      const overColumnId = overId.replace('column-draggable-', '')
-      
-      if (activeColumnId !== overColumnId) {
-        setCurrentLayout(prev => {
-          const columns = [...prev.columns]
-          const activeIndex = columns.findIndex(col => col.id === activeColumnId)
-          const overIndex = columns.findIndex(col => col.id === overColumnId)
-          
-          if (activeIndex !== -1 && overIndex !== -1) {
-            const [movedColumn] = columns.splice(activeIndex, 1)
-            columns.splice(overIndex, 0, movedColumn)
-          }
-          
-          return {
-            ...prev,
-            columns
-          }
-        })
+    // Find the active block
+    let activeBlock = availableBlocks.find(b => b.id === activeId) || 
+                     layoutBlocks.find(b => b.id === activeId) ||
+                     currentLayout.columns.flatMap(col => col.blocks).find(b => b.id === activeId)
+
+    if (!activeBlock) return
+
+    // Handle dropping into the layout area
+    if (overId === 'layout') {
+      // Remove from current location
+      if (availableBlocks.find(b => b.id === activeId)) {
+        setAvailableBlocks(prev => prev.filter(b => b.id !== activeId))
+        setLayoutBlocks(prev => [...prev, activeBlock])
       }
       return
     }
 
-    // Find the active block
-    let activeBlock = availableBlocks.find(b => b.id === activeId)
-    if (!activeBlock) {
-      // Look in columns
-      for (const column of currentLayout.columns) {
-        const found = column.blocks.find(b => b.id === activeId)
-        if (found) {
-          activeBlock = found
-          break
-        }
+    // Handle dropping back to available blocks
+    if (overId === 'available') {
+      // Remove from layout blocks
+      if (layoutBlocks.find(b => b.id === activeId)) {
+        setLayoutBlocks(prev => prev.filter(b => b.id !== activeId))
+        setAvailableBlocks(prev => [...prev, activeBlock])
       }
+      return
     }
 
-    if (!activeBlock) return
+    // Handle reordering within available blocks
+    if (availableBlocks.find(b => b.id === activeId) && availableBlocks.find(b => b.id === overId)) {
+      setAvailableBlocks(prev => {
+        const items = [...prev]
+        const activeIndex = items.findIndex(item => item.id === activeId)
+        const overIndex = items.findIndex(item => item.id === overId)
+        
+        if (activeIndex !== -1 && overIndex !== -1) {
+          const [reorderedItem] = items.splice(activeIndex, 1)
+          items.splice(overIndex, 0, reorderedItem)
+        }
+        
+        return items
+      })
+      return
+    }
 
-    // Handle dropping on column
-    if (overId.startsWith('column-')) {
-      const targetColumnId = overId
-      
-      // Remove from available blocks
-      setAvailableBlocks(prev => prev.filter(b => b.id !== activeId))
-      
-      // Remove from other columns
-      setCurrentLayout(prev => ({
-        ...prev,
-        columns: prev.columns.map(column => ({
-          ...column,
-          blocks: column.id === targetColumnId 
-            ? [...column.blocks, { ...activeBlock!, columnId: targetColumnId }]
-            : column.blocks.filter(b => b.id !== activeId)
-        }))
-      }))
+    // Handle reordering within layout blocks (positioning)
+    if (layoutBlocks.find(b => b.id === activeId) && layoutBlocks.find(b => b.id === overId)) {
+      setLayoutBlocks(prev => {
+        const items = [...prev]
+        const activeIndex = items.findIndex(item => item.id === activeId)
+        const overIndex = items.findIndex(item => item.id === overId)
+        
+        if (activeIndex !== -1 && overIndex !== -1) {
+          const [reorderedItem] = items.splice(activeIndex, 1)
+          items.splice(overIndex, 0, reorderedItem)
+        }
+        
+        return items
+      })
+      return
     }
   }
 
