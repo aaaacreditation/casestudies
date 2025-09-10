@@ -256,9 +256,11 @@ interface DroppableColumnProps {
   blocks: ContentBlock[]
   onUpdate: (id: string, updates: Partial<ContentBlock>) => void
   onDelete: (id: string) => void
+  onRemoveColumn?: (columnId: string) => void
+  totalColumns: number
 }
 
-const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, blocks, onUpdate, onDelete }) => {
+const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, blocks, onUpdate, onDelete, onRemoveColumn, totalColumns }) => {
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: column.id,
   })
@@ -299,18 +301,30 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, blocks, onUpd
           : 'border-slate-200 bg-slate-50/50'
       }`}
     >
-      <div className="flex items-center justify-center mb-4">
-        <div
-          {...columnAttributes}
-          {...columnListeners}
-          className="cursor-grab active:cursor-grabbing p-2 hover:bg-slate-200 rounded-lg transition-colors"
-          title="Drag to reorder column"
-        >
-          <GripVertical className="w-4 h-4 text-slate-400" />
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div
+            {...columnAttributes}
+            {...columnListeners}
+            className="cursor-grab active:cursor-grabbing p-2 hover:bg-slate-200 rounded-lg transition-colors"
+            title="Drag to reorder column"
+          >
+            <GripVertical className="w-4 h-4 text-slate-400" />
+          </div>
+          <div className="text-center text-sm text-slate-500">
+            {blocks.length === 0 ? 'Drop content blocks here' : `Column ${column.id.split('-')[1]}`}
+          </div>
         </div>
-        <div className="text-center text-sm text-slate-500 flex-1">
-          {blocks.length === 0 ? 'Drop content blocks here' : `Column ${column.id.split('-')[1]}`}
-        </div>
+        {onRemoveColumn && totalColumns > 1 && (
+          <button
+            type="button"
+            onClick={() => onRemoveColumn(column.id)}
+            className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+            title="Remove this column"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
       <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
         <div className="space-y-4">
@@ -494,6 +508,36 @@ export default function EditCaseStudy() {
       type,
       columns: newColumns
     })
+  }
+
+  const addColumn = () => {
+    const newColumnNumber = currentLayout.columns.length + 1
+    const newColumn: LayoutColumn = {
+      id: `column-${newColumnNumber}`,
+      blocks: []
+    }
+    
+    setCurrentLayout(prev => ({
+      ...prev,
+      type: Math.min(Math.max(prev.columns.length + 1, 1), 3) as 1 | 2 | 3, // Keep type within bounds but allow more columns
+      columns: [...prev.columns, newColumn]
+    }))
+  }
+
+  const removeColumn = (columnId: string) => {
+    if (currentLayout.columns.length <= 1) return // Don't allow removing the last column
+    
+    // Move blocks from the removed column to available blocks
+    const columnToRemove = currentLayout.columns.find(col => col.id === columnId)
+    if (columnToRemove && columnToRemove.blocks.length > 0) {
+      setAvailableBlocks(prev => [...prev, ...columnToRemove.blocks])
+    }
+    
+    setCurrentLayout(prev => ({
+      ...prev,
+      type: Math.min(Math.max(prev.columns.length - 1, 1), 3) as 1 | 2 | 3,
+      columns: prev.columns.filter(col => col.id !== columnId)
+    }))
   }
 
   // Drag and Drop Handlers
@@ -1071,8 +1115,19 @@ export default function EditCaseStudy() {
 
                       {/* Content Block Tools */}
                       <div className="bg-slate-50 rounded-lg p-4">
-                        <h4 className="text-sm font-medium text-slate-700 mb-3">Add Content Blocks</h4>
-                        <div className="flex gap-2">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-slate-700">Add Content Blocks</h4>
+                          <button
+                            type="button"
+                            onClick={addColumn}
+                            className="flex items-center gap-2 px-3 py-2 bg-indigo-100 text-indigo-800 rounded-lg hover:bg-indigo-200 transition-colors text-sm font-medium"
+                            title="Add a new column to the layout"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add Column
+                          </button>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
                           <button
                             type="button"
                             onClick={() => addContentBlock('title')}
@@ -1142,21 +1197,23 @@ export default function EditCaseStudy() {
                           strategy={horizontalListSortingStrategy}
                         >
                           <div className={`flex gap-4 ${
-                            currentLayout.type === 1 ? 'flex-col' : 'flex-row'
+                            currentLayout.columns.length === 1 ? 'flex-col' : 'flex-row'
                           }`}>
                             {currentLayout.columns.map((column) => (
                               <div 
                                 key={column.id} 
                                 className={`${
-                                  currentLayout.type === 1 ? 'w-full' :
-                                  currentLayout.type === 2 ? 'flex-1 min-w-0' : 'flex-1 min-w-0'
+                                  currentLayout.columns.length === 1 ? 'w-full' : 'flex-1 min-w-0'
                                 }`}
+                                style={{ minWidth: currentLayout.columns.length > 3 ? '250px' : undefined }}
                               >
                                 <DroppableColumn
                                   column={column}
                                   blocks={column.blocks}
                                   onUpdate={updateContentBlock}
                                   onDelete={deleteContentBlock}
+                                  onRemoveColumn={removeColumn}
+                                  totalColumns={currentLayout.columns.length}
                                 />
                               </div>
                             ))}
