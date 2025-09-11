@@ -689,14 +689,14 @@ export default function EditCaseStudy() {
               parsedContent.layout.columns.forEach((col: LayoutColumn, index: number) => {
                 console.log(`🏗️ Column ${index + 1} has ${col.blocks?.length || 0} blocks:`, col.blocks)
               })
-              setCurrentLayout(parsedContent.layout)
+              setPageLayout(parsedContent.layout)
               console.log('✅ Layout set successfully')
             }
             // Handle legacy format - array of blocks
             else if (Array.isArray(parsedContent)) {
               console.log('🔄 Converting legacy format to new layout structure')
               console.log('🔄 Legacy blocks count:', parsedContent.length)
-              const convertedLayout: Layout = {
+              const convertedLayout: PageLayout = {
                 id: 'layout-1',
                 type: 1 as const,
                 columns: [{
@@ -709,13 +709,13 @@ export default function EditCaseStudy() {
                 }]
               }
               console.log('🔄 Converted layout:', convertedLayout)
-              setCurrentLayout(convertedLayout)
+              setPageLayout(convertedLayout)
               console.log('✅ Legacy layout converted and set')
             }
             // Handle old format with layoutBlocks
             else if (parsedContent.layoutBlocks && Array.isArray(parsedContent.layoutBlocks)) {
               console.log('🔄 Converting layoutBlocks format to new layout structure')
-              const layoutBlocksLayout: Layout = {
+              const layoutBlocksLayout: PageLayout = {
                 id: 'layout-1',
                 type: 1 as const,
                 columns: [{
@@ -728,17 +728,17 @@ export default function EditCaseStudy() {
                   }))
                 }]
               }
-              setCurrentLayout(layoutBlocksLayout)
+              setPageLayout(layoutBlocksLayout)
               console.log('✅ Converted', parsedContent.layoutBlocks.length, 'layoutBlocks to layout columns')
             }
             else {
               console.log('No recognizable content structure, using default layout')
-              const noContentLayout: Layout = {
+              const noContentLayout: PageLayout = {
                 id: 'layout-1',
                 type: 1 as const,
                 columns: [{ id: 'column-1', blocks: [] }]
               }
-              setCurrentLayout(noContentLayout)
+              setPageLayout(noContentLayout)
             }
             
             // Handle availableBlocks and layoutBlocks - merge them for editing
