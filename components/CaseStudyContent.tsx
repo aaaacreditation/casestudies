@@ -34,6 +34,8 @@ interface ContentBlock {
   fileUrl?: string
   caption?: string
   titleLevel?: 1 | 2 | 3 | 4 | 5 | 6
+  padding?: number // Padding in pixels
+  margin?: number // Margin in pixels
 }
 
 // Layout Types
@@ -105,7 +107,7 @@ function ContentBlocks({ content }: { content: string }) {
   return (
     <>
       {/* Render Layout */}
-      <div className={`grid gap-8 ${
+      <div className={`grid gap-6 ${
         layout.type === 1 ? 'grid-cols-1' :
         layout.type === 2 ? 'grid-cols-1 md:grid-cols-2' : 
         'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
@@ -113,114 +115,172 @@ function ContentBlocks({ content }: { content: string }) {
         {layout.columns.map((column, columnIndex) => (
           <div 
             key={column.id} 
-            className={`space-y-4 ${
-              layout.type > 1 ? 'border-l-2 border-slate-200 pl-6 first:border-l-0 first:pl-0' : ''
-            }`}
+            className="space-y-4"
           >
-            {column.blocks.map((block, blockIndex) => (
-              <ContentBlockRenderer 
-                key={block.id} 
-                block={block} 
-                index={columnIndex * 10 + blockIndex} 
-              />
-            ))}
+            {/* Column Header */}
+            <div className="text-sm font-medium text-slate-500 mb-3 px-1">
+              Column {columnIndex + 1}
+            </div>
+            
+            {/* Column Content */}
+            <div className="space-y-4">
+              {column.blocks.map((block, blockIndex) => (
+                <ContentBlockRenderer 
+                  key={block.id} 
+                  block={block} 
+                  index={columnIndex * 10 + blockIndex} 
+                />
+              ))}
+            </div>
+            
+            {/* Empty column placeholder */}
+            {column.blocks.length === 0 && (
+              <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center text-slate-500">
+                <div className="text-sm">Empty column</div>
+              </div>
+            )}
           </div>
         ))}
       </div>
       
       {/* Render Available Blocks (if any) */}
       {availableBlocks && availableBlocks.length > 0 && (
-        <div className="mt-8 space-y-6">
-          <h3 className="text-lg font-semibold text-slate-700">Additional Content</h3>
-          {availableBlocks.map((block, index) => (
-            <ContentBlockRenderer key={block.id} block={block} index={index + 100} />
-          ))}
+        <div className="mt-8 space-y-4">
+          <div className="text-sm font-medium text-slate-500 mb-3 px-1">
+            Available Content Blocks
+          </div>
+          <div className="space-y-4">
+            {availableBlocks.map((block, index) => (
+              <ContentBlockRenderer key={block.id} block={block} index={index + 100} />
+            ))}
+          </div>
         </div>
       )}
     </>
   )
 }
 
-// Component to render individual content blocks
+// Component to render individual content blocks with the same styling as the editor
 function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: (index % 10) * 0.1 }}
-      className="overflow-hidden"
+      className="border border-slate-200 rounded-lg bg-white shadow-sm overflow-hidden"
     >
-      {block.type === 'title' && block.content && (
-        <div className="mb-6">
-          {block.titleLevel === 1 && <h1 className="text-4xl font-bold text-slate-800 leading-tight mb-4">{block.content}</h1>}
-          {block.titleLevel === 2 && <h2 className="text-3xl font-semibold text-slate-800 leading-tight mb-4">{block.content}</h2>}
-          {block.titleLevel === 3 && <h3 className="text-2xl font-medium text-slate-800 leading-tight mb-3">{block.content}</h3>}
-          {block.titleLevel === 4 && <h4 className="text-xl font-medium text-slate-800 leading-tight mb-3">{block.content}</h4>}
-          {block.titleLevel === 5 && <h5 className="text-lg font-medium text-slate-800 leading-tight mb-2">{block.content}</h5>}
-          {block.titleLevel === 6 && <h6 className="text-base font-medium text-slate-800 leading-tight mb-2">{block.content}</h6>}
+      {/* Component Header - showing component type and info */}
+      <div className="flex items-center justify-between p-3 bg-slate-50 border-b border-slate-200">
+        <div className="flex items-center gap-2">
+          {block.type === 'text' && <div className="w-2 h-2 rounded-full bg-blue-600"></div>}
+          {block.type === 'title' && <div className="w-2 h-2 rounded-full bg-orange-600"></div>}
+          {block.type === 'image' && <div className="w-2 h-2 rounded-full bg-green-600"></div>}
+          {block.type === 'video' && <div className="w-2 h-2 rounded-full bg-purple-600"></div>}
+          <span className="text-sm font-medium text-slate-700 capitalize">
+            {block.type === 'title' ? `H${block.titleLevel || 1} Title` : `${block.type}`}
+          </span>
         </div>
-      )}
+        
+        {/* Show spacing info if custom spacing is applied */}
+        {((block.padding && block.padding !== 16) || (block.margin && block.margin !== 8)) && (
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            {block.padding && block.padding !== 16 && (
+              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">P: {block.padding}px</span>
+            )}
+            {block.margin && block.margin !== 8 && (
+              <span className="bg-green-100 text-green-700 px-2 py-1 rounded">M: {block.margin}px</span>
+            )}
+          </div>
+        )}
+      </div>
+      
+      {/* Content Area with applied padding and margin */}
+      <div 
+        className="border-t border-slate-200" 
+        style={{ 
+          padding: `${block.padding || 16}px`, 
+          margin: `${block.margin || 8}px 0` 
+        }}
+      >
+        {block.type === 'title' && block.content && (
+          <div>
+            {block.titleLevel === 1 && <h1 className="text-4xl font-bold text-slate-800 leading-tight">{block.content}</h1>}
+            {block.titleLevel === 2 && <h2 className="text-3xl font-semibold text-slate-800 leading-tight">{block.content}</h2>}
+            {block.titleLevel === 3 && <h3 className="text-2xl font-medium text-slate-800 leading-tight">{block.content}</h3>}
+            {block.titleLevel === 4 && <h4 className="text-xl font-medium text-slate-800 leading-tight">{block.content}</h4>}
+            {block.titleLevel === 5 && <h5 className="text-lg font-medium text-slate-800 leading-tight">{block.content}</h5>}
+            {block.titleLevel === 6 && <h6 className="text-base font-medium text-slate-800 leading-tight">{block.content}</h6>}
+          </div>
+        )}
 
-      {block.type === 'text' && block.content && (
-        <div className="mb-6 prose prose-lg max-w-none">
-          <MDEditor 
-            source={block.content} 
-            style={{ 
-              backgroundColor: 'transparent',
-              color: '#334155'
-            }}
-          />
-        </div>
-      )}
-      
-      {block.type === 'image' && (block.fileUrl || block.url) && (
-        <div className="mb-8">
-          <div className="relative w-full max-w-4xl mx-auto">
-            <Image
-              src={block.fileUrl || block.url || ''}
-              alt={block.caption || 'Content image'}
-              width={1200}
-              height={800}
-              className="w-full h-auto object-contain rounded-lg shadow-md"
-              style={{ maxHeight: '600px' }}
-              priority={false}
-            />
-          </div>
-          {block.caption && (
-            <div className="mt-3 text-sm text-slate-600 text-center max-w-4xl mx-auto italic">
-              {block.caption}
+        {block.type === 'text' && block.content && (
+          <div className="prose prose-lg max-w-none">
+            <div className="text-slate-700 leading-relaxed whitespace-pre-wrap">
+              {block.content}
             </div>
-          )}
-        </div>
-      )}
-      
-      {block.type === 'video' && (
-        <div>
-          <div className="relative h-96">
-            {block.url && isYouTubeUrl(block.url) ? (
-              <iframe
-                src={`https://www.youtube.com/embed/${getYouTubeVideoId(block.url)}`}
-                className="w-full h-full"
-                allowFullScreen
-                title="YouTube video player"
+          </div>
+        )}
+        
+        {block.type === 'image' && (block.fileUrl || block.url) && (
+          <div>
+            <div className="relative w-full">
+              <Image
+                src={block.fileUrl || block.url || ''}
+                alt={block.caption || 'Content image'}
+                width={1200}
+                height={800}
+                className="w-full h-auto object-contain rounded-lg"
+                style={{ maxHeight: '400px' }}
+                priority={false}
               />
-            ) : block.fileUrl ? (
-              <video
-                src={block.fileUrl}
-                controls
-                className="w-full h-full object-cover"
-              >
-                Your browser does not support the video tag.
-              </video>
-            ) : null}
-          </div>
-          {block.caption && (
-            <div className="p-4 bg-slate-50 text-sm text-slate-600 text-center">
-              {block.caption}
             </div>
-          )}
-        </div>
-      )}
+            {block.caption && (
+              <div className="mt-3 text-sm text-slate-600 italic text-center">
+                {block.caption}
+              </div>
+            )}
+          </div>
+        )}
+        
+        {block.type === 'video' && (
+          <div>
+            <div className="relative h-64 rounded-lg overflow-hidden bg-slate-100">
+              {block.url && isYouTubeUrl(block.url) ? (
+                <iframe
+                  src={`https://www.youtube.com/embed/${getYouTubeVideoId(block.url)}`}
+                  className="w-full h-full"
+                  allowFullScreen
+                  title="YouTube video player"
+                />
+              ) : block.fileUrl ? (
+                <video
+                  src={block.fileUrl}
+                  controls
+                  className="w-full h-full object-cover"
+                >
+                  Your browser does not support the video tag.
+                </video>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-slate-500">
+                  <div className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-2 bg-slate-200 rounded-lg flex items-center justify-center">
+                      <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h1m4 0h1m6-4a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm">Video content</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            {block.caption && (
+              <div className="mt-3 text-sm text-slate-600 italic text-center">
+                {block.caption}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </motion.div>
   )
 }
