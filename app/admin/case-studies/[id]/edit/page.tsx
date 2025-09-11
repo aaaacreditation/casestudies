@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { 
@@ -38,6 +38,7 @@ import {
 import {
   SortableContext,
   verticalListSortingStrategy,
+  horizontalListSortingStrategy,
   useSortable
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -54,6 +55,8 @@ interface ContentBlock {
   columnId?: string
   titleLevel?: 1 | 2 | 3 | 4 | 5 | 6
   blocks?: ContentBlock[] // For column type
+  padding?: number // Padding in pixels
+  margin?: number // Margin in pixels
 }
 
 // Layout Types
@@ -85,6 +88,7 @@ interface SimpleContentEditorProps {
   onReorder: (blocks: ContentBlock[]) => void
 }
 
+// DEPRECATED: SimpleContentEditor is no longer used
 const SimpleContentEditor: React.FC<SimpleContentEditorProps> = ({ blocks, onUpdate, onDelete }) => {
   return (
     <div className="min-h-[400px]">
@@ -93,13 +97,11 @@ const SimpleContentEditor: React.FC<SimpleContentEditorProps> = ({ blocks, onUpd
           <div className="space-y-4">
             {blocks.map((block) => {
               if (block.type === 'column') {
+                // DEPRECATED: This path is no longer used as we switched to layout-based approach
                 return (
-                  <EditableColumn
-                    key={block.id}
-                    column={block}
-                    onUpdate={onUpdate}
-                    onDelete={onDelete}
-                  />
+                  <div key={block.id} className="p-4 border border-slate-200 rounded-lg">
+                    <p className="text-slate-500">Column block (deprecated)</p>
+                  </div>
                 )
               } else {
                 return (
@@ -126,13 +128,26 @@ const SimpleContentEditor: React.FC<SimpleContentEditorProps> = ({ blocks, onUpd
 }
 
 // Editable Column - can be dragged and can accept dropped content
-interface EditableColumnProps {
-  column: ContentBlock
-  onUpdate: (id: string, updates: Partial<ContentBlock>) => void
-  onDelete: (id: string) => void
+// Layout Types
+interface LayoutColumn {
+  id: string
+  blocks: ContentBlock[]
 }
 
-const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDelete }) => {
+interface Layout {
+  id: string
+  type: 1 | 2 | 3
+  columns: LayoutColumn[]
+}
+
+interface EditableColumnProps {
+  column: LayoutColumn
+  onUpdate: (id: string, updates: Partial<LayoutColumn>) => void
+  onDelete: (id: string) => void
+  onAddBlock: (columnId: string, type: 'text' | 'image' | 'video' | 'title') => void
+}
+
+const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDelete, onAddBlock }) => {
   // Make the column itself draggable
   const {
     attributes,
@@ -149,6 +164,26 @@ const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDel
   })
 
   const columnBlocks = column.blocks || []
+
+  // Function to add a new block to this column
+  const addBlockToColumn = (type: 'text' | 'image' | 'video' | 'title') => {
+    const newBlock: ContentBlock = {
+      id: Date.now().toString(),
+      type,
+      content: type === 'text' || type === 'title' ? 'Click to edit...' : undefined,
+      file: undefined,
+      url: undefined,
+      caption: undefined,
+      titleLevel: type === 'title' ? 1 : undefined,
+      padding: 16,
+      margin: 8,
+      columnId: column.id
+    }
+    
+    // Add block directly to this column
+    const updatedBlocks = [...columnBlocks, newBlock]
+    onUpdate(column.id, { blocks: updatedBlocks })
+  }
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -174,13 +209,9 @@ const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDel
             <GripVertical className="w-5 h-5 text-indigo-600" />
           </div>
           <LayoutGrid className="w-5 h-5 text-indigo-600" />
-          <input
-            type="text"
-            value={column.content || ''}
-            onChange={(e) => onUpdate(column.id, { content: e.target.value })}
-            placeholder="Column Title"
-            className="bg-transparent text-lg font-semibold text-indigo-800 border-none outline-none flex-1"
-          />
+          <span className="text-lg font-semibold text-indigo-800 flex-1">
+            Column {column.id.split('-')[1]}
+          </span>
         </div>
         <button
           type="button"
@@ -202,8 +233,8 @@ const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDel
         {columnBlocks.length > 0 ? (
           <div className="space-y-3">
             {columnBlocks.map((block) => (
-              <div key={block.id} className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
-                <div className="flex items-center justify-between mb-2">
+              <div key={block.id} className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-t-lg">
                   <div className="flex items-center gap-2">
                     {block.type === 'text' && <FileText className="w-4 h-4 text-blue-600" />}
                     {block.type === 'title' && <Type className="w-4 h-4 text-orange-600" />}
@@ -213,21 +244,138 @@ const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDel
                       {block.type === 'title' ? `H${block.titleLevel || 1} Title` : `${block.type}`}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // Remove from column
-                      const updatedBlocks = columnBlocks.filter(b => b.id !== block.id)
-                      onUpdate(column.id, { blocks: updatedBlocks })
-                    }}
-                    className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
-                    title="Remove from column"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {/* Spacing Controls */}
+                    <div className="flex items-center gap-1 text-xs">
+                      <label className="text-slate-500">P:</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={block.padding || 16}
+                        onChange={(e) => {
+                          const updatedBlocks = columnBlocks.map(b => 
+                            b.id === block.id ? { ...b, padding: parseInt(e.target.value) || 0 } : b
+                          )
+                          onUpdate(column.id, { blocks: updatedBlocks })
+                        }}
+                        className="w-12 px-1 py-0.5 text-xs border border-slate-200 rounded"
+                        title="Padding"
+                      />
+                      <label className="text-slate-500 ml-1">M:</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={block.margin || 8}
+                        onChange={(e) => {
+                          const updatedBlocks = columnBlocks.map(b => 
+                            b.id === block.id ? { ...b, margin: parseInt(e.target.value) || 0 } : b
+                          )
+                          onUpdate(column.id, { blocks: updatedBlocks })
+                        }}
+                        className="w-12 px-1 py-0.5 text-xs border border-slate-200 rounded"
+                        title="Margin"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Remove from column
+                        const updatedBlocks = columnBlocks.filter(b => b.id !== block.id)
+                        onUpdate(column.id, { blocks: updatedBlocks })
+                      }}
+                      className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
+                      title="Remove from column"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="text-sm text-slate-600">
-                  {block.content || 'No content'}
+                <div 
+                  className="border-t border-slate-200" 
+                  style={{ 
+                    padding: `${block.padding || 16}px`, 
+                    margin: `${block.margin || 8}px 0` 
+                  }}
+                >
+                  {block.type === 'text' && (
+                    <textarea
+                      value={block.content || ''}
+                      onChange={(e) => {
+                        const updatedBlocks = columnBlocks.map(b => 
+                          b.id === block.id ? { ...b, content: e.target.value } : b
+                        )
+                        onUpdate(column.id, { blocks: updatedBlocks })
+                      }}
+                      placeholder="Click to edit text content..."
+                      className="w-full min-h-[100px] p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none resize-vertical"
+                      style={{ fontFamily: 'inherit', fontSize: '14px', lineHeight: '1.5' }}
+                    />
+                  )}
+                  {block.type === 'title' && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-2">
+                          Heading Level
+                        </label>
+                        <select
+                          value={block.titleLevel || 1}
+                          onChange={(e) => {
+                            const updatedBlocks = columnBlocks.map(b => 
+                              b.id === block.id ? { ...b, titleLevel: parseInt(e.target.value) as 1 | 2 | 3 | 4 | 5 | 6 } : b
+                            )
+                            onUpdate(column.id, { blocks: updatedBlocks })
+                          }}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm"
+                        >
+                          <option value={1}>H1 - Main Title</option>
+                          <option value={2}>H2 - Section Title</option>
+                          <option value={3}>H3 - Subsection</option>
+                          <option value={4}>H4 - Small Heading</option>
+                          <option value={5}>H5 - Minor Heading</option>
+                          <option value={6}>H6 - Smallest Heading</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-2">
+                          Title Text
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Click to edit title..."
+                          value={block.content || ''}
+                          onChange={(e) => {
+                            const updatedBlocks = columnBlocks.map(b => 
+                              b.id === block.id ? { ...b, content: e.target.value } : b
+                            )
+                            onUpdate(column.id, { blocks: updatedBlocks })
+                          }}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm"
+                        />
+                      </div>
+                      {/* Preview */}
+                      {block.content && (
+                        <div className="mt-3 p-3 bg-slate-50 rounded-lg">
+                          <p className="text-xs text-slate-500 mb-1">Preview:</p>
+                          {React.createElement(`h${block.titleLevel || 1}`, {
+                            className: `font-bold ${
+                              block.titleLevel === 1 ? 'text-3xl' :
+                              block.titleLevel === 2 ? 'text-2xl' :
+                              block.titleLevel === 3 ? 'text-xl' :
+                              block.titleLevel === 4 ? 'text-lg' :
+                              block.titleLevel === 5 ? 'text-base' : 'text-sm'
+                            }`
+                          }, block.content)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {(block.type === 'image' || block.type === 'video') && (
+                    <div className="text-sm text-slate-600">
+                      {block.content || block.url || 'No content'}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -235,8 +383,83 @@ const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDel
         ) : (
           <div className="text-center py-12 text-slate-400 border-2 border-dashed border-slate-300 rounded-lg">
             <Plus className="mx-auto h-12 w-12 text-slate-300 mb-3" />
-            <p className="text-lg font-medium mb-1">Drop content here</p>
-            <p className="text-sm">Drag titles, text, images, or videos into this column</p>
+            <p className="text-lg font-medium mb-1">Click to add content</p>
+            <p className="text-sm mb-4">Choose a component to add to this column</p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              <button
+                type="button"
+                onClick={() => addBlockToColumn('title')}
+                className="flex items-center gap-1 px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
+              >
+                <Type className="w-4 h-4" />
+                Title
+              </button>
+              <button
+                type="button"
+                onClick={() => addBlockToColumn('text')}
+                className="flex items-center gap-1 px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
+              >
+                <FileText className="w-4 h-4" />
+                Text
+              </button>
+              <button
+                type="button"
+                onClick={() => addBlockToColumn('image')}
+                className="flex items-center gap-1 px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
+              >
+                <ImageIcon className="w-4 h-4" />
+                Image
+              </button>
+              <button
+                type="button"
+                onClick={() => addBlockToColumn('video')}
+                className="flex items-center gap-1 px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
+              >
+                <Video className="w-4 h-4" />
+                Video
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Add components button for columns with content */}
+        {columnBlocks.length > 0 && (
+          <div className="mt-4 p-3 border-2 border-dashed border-slate-300 rounded-lg bg-slate-50/50">
+            <p className="text-xs text-slate-500 mb-2 text-center">Add more components:</p>
+            <div className="flex flex-wrap gap-1 justify-center">
+              <button
+                type="button"
+                onClick={() => addBlockToColumn('title')}
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-slate-200 rounded hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
+              >
+                <Type className="w-3 h-3" />
+                Title
+              </button>
+              <button
+                type="button"
+                onClick={() => addBlockToColumn('text')}
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-slate-200 rounded hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
+              >
+                <FileText className="w-3 h-3" />
+                Text
+              </button>
+              <button
+                type="button"
+                onClick={() => addBlockToColumn('image')}
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-slate-200 rounded hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
+              >
+                <ImageIcon className="w-3 h-3" />
+                Image
+              </button>
+              <button
+                type="button"
+                onClick={() => addBlockToColumn('video')}
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-slate-200 rounded hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
+              >
+                <Video className="w-3 h-3" />
+                Video
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -469,18 +692,41 @@ export default function EditCaseStudy() {
         if (data.content) {
           try {
             const parsedContent = JSON.parse(data.content)
+            console.log('Parsed content:', parsedContent) // Debug log
+            
             if (parsedContent.layout && parsedContent.layout.columns) {
+              // Set the layout with columns and their blocks
               setCurrentLayout(parsedContent.layout)
+              
+              // Extract all blocks from layout columns for easy access
+              const allLayoutBlocks = parsedContent.layout.columns.flatMap((col: LayoutColumn) => col.blocks || [])
+              setLayoutBlocks(allLayoutBlocks)
             }
-            if (parsedContent.availableBlocks) {
+            
+            if (parsedContent.availableBlocks && Array.isArray(parsedContent.availableBlocks)) {
+              // Set available blocks that aren't in columns yet
               setAvailableBlocks(parsedContent.availableBlocks)
-            }
-            if (parsedContent.layoutBlocks) {
-              setLayoutBlocks(parsedContent.layoutBlocks)
             }
           } catch (error) {
             console.error('Error parsing content:', error)
+            // If parsing fails, initialize with empty structure
+            setCurrentLayout({
+              id: '1',
+              type: 1,
+              columns: [{ id: 'col-1', blocks: [] }]
+            })
+            setAvailableBlocks([])
+            setLayoutBlocks([])
           }
+        } else {
+          // No content yet, initialize with default layout
+          setCurrentLayout({
+            id: '1',
+            type: 1,
+            columns: [{ id: 'col-1', blocks: [] }]
+          })
+          setAvailableBlocks([])
+          setLayoutBlocks([])
         }
 
         // Set media data
@@ -595,6 +841,47 @@ export default function EditCaseStudy() {
       type,
       columns: newColumns
     })
+  }
+
+  // Layout Column Management Functions
+  const updateLayoutColumn = (columnId: string, updates: Partial<LayoutColumn>) => {
+    setCurrentLayout(prev => ({
+      ...prev,
+      columns: prev.columns.map(col => 
+        col.id === columnId ? { ...col, ...updates } : col
+      )
+    }))
+  }
+
+  const deleteLayoutColumn = (columnId: string) => {
+    setCurrentLayout(prev => ({
+      ...prev,
+      columns: prev.columns.filter(col => col.id !== columnId)
+    }))
+  }
+
+  const addBlockToColumn = (columnId: string, type: 'text' | 'image' | 'video' | 'title') => {
+    const newBlock: ContentBlock = {
+      id: Date.now().toString(),
+      type,
+      content: type === 'text' || type === 'title' ? 'Click to edit...' : undefined,
+      file: undefined,
+      url: undefined,
+      caption: undefined,
+      titleLevel: type === 'title' ? 1 : undefined,
+      padding: 16,
+      margin: 8,
+      columnId: columnId
+    }
+    
+    setCurrentLayout(prev => ({
+      ...prev,
+      columns: prev.columns.map(col => 
+        col.id === columnId 
+          ? { ...col, blocks: [...col.blocks, newBlock] }
+          : col
+      )
+    }))
   }
 
   const addColumn = () => {
@@ -1283,12 +1570,36 @@ export default function EditCaseStudy() {
                           </div>
                         </div>
 
-                        <SimpleContentEditor 
-                          blocks={layoutBlocks}
-                          onUpdate={updateContentBlock}
-                          onDelete={deleteContentBlock}
-                          onReorder={setLayoutBlocks}
-                        />
+                        {/* Layout Grid */}
+                        <div className="bg-white border border-slate-200 rounded-lg p-4">
+                          <h3 className="text-sm font-medium text-slate-700 mb-3">Layout Preview</h3>
+                          <SortableContext
+                            items={currentLayout.columns.map(col => `column-draggable-${col.id}`)}
+                            strategy={horizontalListSortingStrategy}
+                          >
+                            <div className={`grid gap-4 ${
+                              currentLayout.type === 1 ? 'grid-cols-1' :
+                              currentLayout.type === 2 ? 'grid-cols-2' : 'grid-cols-3'
+                            }`}>
+                              {currentLayout.columns.map((column) => (
+                                <div
+                                  key={column.id}
+                                  className={`${
+                                    currentLayout.type === 1 ? 'w-full' :
+                                    currentLayout.type === 2 ? 'flex-1 min-w-0' : 'flex-1 min-w-0'
+                                  }`}
+                                >
+                                  <EditableColumn
+                                    column={column}
+                                    onUpdate={updateLayoutColumn}
+                                    onDelete={deleteLayoutColumn}
+                                    onAddBlock={addBlockToColumn}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </SortableContext>
+                        </div>
                       </div>
 
                       {/* Empty State */}

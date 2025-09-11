@@ -16,7 +16,6 @@ import {
   Upload,
   X,
   Youtube,
-  Plus,
   GripVertical,
   Trash2,
   Type,
@@ -36,7 +35,6 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  closestCorners,
   closestCenter,
   useDroppable
 } from '@dnd-kit/core'
@@ -58,6 +56,8 @@ interface ContentBlock {
   caption?: string
   columnId?: string
   titleLevel?: 1 | 2 | 3 | 4 | 5 | 6 // For title blocks
+  padding?: number // Padding in pixels
+  margin?: number // Margin in pixels
 }
 
 // Layout Types
@@ -125,16 +125,97 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
             {block.type === 'title' ? `Title H${block.titleLevel || 1}` : `${block.type} Block`}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={() => onDelete(block.id)}
-          className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Spacing Controls */}
+          <div className="flex items-center gap-2 text-xs bg-slate-100 px-2 py-1 rounded">
+            <div className="flex items-center gap-1">
+              <label className="text-blue-600 font-medium">P:</label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={block.padding || 16}
+                onChange={(e) => onUpdate(block.id, { padding: parseInt(e.target.value) || 0 })}
+                className="w-12 px-1 py-0.5 text-xs border border-slate-200 rounded focus:border-blue-400 focus:outline-none"
+                title="Internal spacing (padding)"
+              />
+              <span className="text-slate-400">px</span>
+            </div>
+            <div className="w-px h-4 bg-slate-300"></div>
+            <div className="flex items-center gap-1">
+              <label className="text-green-600 font-medium">M:</label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={block.margin || 8}
+                onChange={(e) => onUpdate(block.id, { margin: parseInt(e.target.value) || 0 })}
+                className="w-12 px-1 py-0.5 text-xs border border-slate-200 rounded focus:border-green-400 focus:outline-none"
+                title="External spacing (margin)"
+              />
+              <span className="text-slate-400">px</span>
+            </div>
+          </div>
+          
+          {/* Quick spacing presets */}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onUpdate(block.id, { padding: 8, margin: 4 })}
+              className="text-xs px-2 py-1 bg-slate-200 hover:bg-slate-300 rounded text-slate-600 transition-colors"
+              title="Compact spacing"
+            >
+              S
+            </button>
+            <button
+              type="button"
+              onClick={() => onUpdate(block.id, { padding: 16, margin: 8 })}
+              className="text-xs px-2 py-1 bg-slate-200 hover:bg-slate-300 rounded text-slate-600 transition-colors"
+              title="Default spacing"
+            >
+              M
+            </button>
+            <button
+              type="button"
+              onClick={() => onUpdate(block.id, { padding: 24, margin: 16 })}
+              className="text-xs px-2 py-1 bg-slate-200 hover:bg-slate-300 rounded text-slate-600 transition-colors"
+              title="Large spacing"
+            >
+              L
+            </button>
+          </div>
+          
+          <button
+            type="button"
+            onClick={() => onDelete(block.id)}
+            className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
       
-      <div className="p-4">
+      <div 
+        className="border-t border-slate-200 relative" 
+        style={{ 
+          padding: `${block.padding || 16}px`, 
+          margin: `${block.margin || 8}px 0`,
+          backgroundColor: (block.padding || 16) > 16 ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
+          border: (block.padding || 16) > 16 ? '1px dashed rgba(59, 130, 246, 0.2)' : 'none'
+        }}
+      >
+        {/* Visual padding indicator */}
+        {(block.padding || 16) > 16 && (
+          <div className="absolute top-1 left-1 text-xs text-blue-500 bg-blue-50 px-1 rounded">
+            P: {block.padding}px
+          </div>
+        )}
+        {/* Visual margin indicator */}
+        {(block.margin || 8) > 8 && (
+          <div className="absolute -top-3 right-1 text-xs text-green-600 bg-green-50 px-1 rounded">
+            M: {block.margin}px
+          </div>
+        )}
         {block.type === 'title' && (
           <div className="space-y-3">
             <div>
@@ -160,7 +241,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
               </label>
               <input
                 type="text"
-                placeholder="Enter your title..."
+                placeholder="Click to edit title..."
                 value={block.content || ''}
                 onChange={(e) => onUpdate(block.id, { content: e.target.value })}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm"
@@ -182,10 +263,12 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
         )}
 
         {block.type === 'text' && (
-          <RichTextEditor
+          <textarea
             value={block.content || ''}
-            onChange={(value) => onUpdate(block.id, { content: value })}
-            placeholder="Enter your text content..."
+            onChange={(e) => onUpdate(block.id, { content: e.target.value })}
+            placeholder="Click to edit text content..."
+            className="w-full min-h-[100px] p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none resize-vertical"
+            style={{ fontFamily: 'inherit', fontSize: '14px', lineHeight: '1.5' }}
           />
         )}
         
@@ -318,9 +401,10 @@ interface DroppableColumnProps {
   blocks: ContentBlock[]
   onUpdate: (id: string, updates: Partial<ContentBlock>) => void
   onDelete: (id: string) => void
+  onAddBlock: (columnId: string, type: 'text' | 'image' | 'video' | 'title') => void
 }
 
-const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, blocks, onUpdate, onDelete }) => {
+const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, blocks, onUpdate, onDelete, onAddBlock }) => {
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: column.id,
   })
@@ -386,6 +470,45 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({ column, blocks, onUpd
           ))}
         </div>
       </SortableContext>
+      
+      {/* Click-to-Add Component Buttons */}
+      <div className="mt-4 p-3 border-2 border-dashed border-slate-300 rounded-lg bg-slate-50/50">
+        <p className="text-xs text-slate-500 mb-2 text-center">Click to add components:</p>
+        <div className="flex flex-wrap gap-1 justify-center">
+          <button
+            type="button"
+            onClick={() => onAddBlock(column.id, 'title')}
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-slate-200 rounded hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
+          >
+            <Type className="w-3 h-3" />
+            Title
+          </button>
+          <button
+            type="button"
+            onClick={() => onAddBlock(column.id, 'text')}
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-slate-200 rounded hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
+          >
+            <FileText className="w-3 h-3" />
+            Text
+          </button>
+          <button
+            type="button"
+            onClick={() => onAddBlock(column.id, 'image')}
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-slate-200 rounded hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
+          >
+            <ImageIcon className="w-3 h-3" />
+            Image
+          </button>
+          <button
+            type="button"
+            onClick={() => onAddBlock(column.id, 'video')}
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-slate-200 rounded hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
+          >
+            <Video className="w-3 h-3" />
+            Video
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -414,16 +537,16 @@ const AvailableBlocksContainer: React.FC<AvailableBlocksContainerProps> = ({ blo
       </h3>
       {blocks.length > 0 ? (
         <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-3">
-            {blocks.map((block) => (
-              <DraggableBlock
-                key={block.id}
-                block={block}
-                onUpdate={onUpdate}
-                onDelete={onDelete}
-              />
-            ))}
-          </div>
+        <div className="space-y-3">
+          {blocks.map((block) => (
+            <DraggableBlock
+              key={block.id}
+              block={block}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
         </SortableContext>
       ) : (
         <div className="text-center py-8 text-slate-500">
@@ -714,6 +837,7 @@ export default function NewCaseStudy() {
     })
   )
 
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
     setFormData(prev => ({
@@ -752,6 +876,31 @@ export default function NewCaseStudy() {
       titleLevel: type === 'title' ? 1 : undefined
     }
     setAvailableBlocks(prev => [...prev, newBlock])
+  }
+
+  // Add block directly to a specific column
+  const addBlockToColumn = (columnId: string, type: 'text' | 'image' | 'video' | 'title') => {
+    const newBlock: ContentBlock = {
+      id: Date.now().toString(),
+      type,
+      content: type === 'text' || type === 'title' ? 'Click to edit...' : undefined,
+      file: undefined,
+      url: undefined,
+      caption: undefined,
+      titleLevel: type === 'title' ? 1 : undefined,
+      padding: 16,
+      margin: 8,
+      columnId: columnId
+    }
+    
+    setCurrentLayout(prev => ({
+      ...prev,
+      columns: prev.columns.map(col => 
+        col.id === columnId 
+          ? { ...col, blocks: [...col.blocks, newBlock] }
+          : col
+      )
+    }))
   }
 
   const updateContentBlock = (id: string, updates: Partial<ContentBlock>) => {
@@ -1274,6 +1423,7 @@ export default function NewCaseStudy() {
                                     blocks={column.blocks}
                                     onUpdate={updateContentBlock}
                                     onDelete={deleteContentBlock}
+                                    onAddBlock={addBlockToColumn}
                                   />
                                 </div>
                               ))}
