@@ -501,25 +501,37 @@ export default function EditCaseStudy() {
   // Fetch existing case study data
   const fetchCaseStudy = useCallback(async () => {
     try {
+      console.log('🔍 Fetching case study with ID:', params.id)
       const response = await fetch(`/api/case-studies/${params.id}`)
+      console.log('📡 API Response status:', response.status)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('📦 Full API response data:', data)
+        console.log('📝 Case study title:', data.title)
+        console.log('🏢 Company data:', data.company)
         
         // Populate form data
         setFormData({
           title: data.title || '',
           subtitle: data.subtitle || '',
           excerpt: data.excerpt || '',
-          companyName: data.company.name || '',
-          companyIndustry: data.company.industry || '',
-          companyLocation: data.company.location || '',
-          companySize: data.company.size || '',
-          companyWebsite: data.company.website || '',
-          companyDescription: data.company.description || ''
+          companyName: data.company?.name || '',
+          companyIndustry: data.company?.industry || '',
+          companyLocation: data.company?.location || '',
+          companySize: data.company?.size || '',
+          companyWebsite: data.company?.website || '',
+          companyDescription: data.company?.description || ''
+        })
+        console.log('✅ Form data populated:', {
+          title: data.title,
+          companyName: data.company?.name
         })
 
         // Parse and populate content blocks
-        console.log('Raw content from database:', data.content)
+        console.log('📄 Raw content from database:', data.content)
+        console.log('📄 Content type:', typeof data.content)
+        console.log('📄 Content length:', data.content?.length || 0)
         
         if (data.content) {
           try {
@@ -530,15 +542,21 @@ export default function EditCaseStudy() {
             
             // Handle new format with layout structure
             if (parsedContent.layout && parsedContent.layout.columns) {
-              console.log('Loading layout with columns:', parsedContent.layout.columns.length)
+              console.log('🏗️ Loading layout with columns:', parsedContent.layout.columns.length)
+              console.log('🏗️ Layout structure:', parsedContent.layout)
+              parsedContent.layout.columns.forEach((col: LayoutColumn, index: number) => {
+                console.log(`🏗️ Column ${index + 1} has ${col.blocks?.length || 0} blocks:`, col.blocks)
+              })
               setCurrentLayout(parsedContent.layout)
+              console.log('✅ Layout set successfully')
             }
             // Handle legacy format - array of blocks
             else if (Array.isArray(parsedContent)) {
-              console.log('Converting legacy format to new layout structure')
-              setCurrentLayout({
+              console.log('🔄 Converting legacy format to new layout structure')
+              console.log('🔄 Legacy blocks count:', parsedContent.length)
+              const convertedLayout: Layout = {
                 id: 'layout-1',
-                type: 1,
+                type: 1 as const,
                 columns: [{
                   id: 'column-1',
                   blocks: parsedContent.map((block: ContentBlock) => ({
@@ -547,14 +565,17 @@ export default function EditCaseStudy() {
                     margin: block.margin || 8
                   }))
                 }]
-              })
+              }
+              console.log('🔄 Converted layout:', convertedLayout)
+              setCurrentLayout(convertedLayout)
+              console.log('✅ Legacy layout converted and set')
             }
             // Handle old format with layoutBlocks
             else if (parsedContent.layoutBlocks && Array.isArray(parsedContent.layoutBlocks)) {
               console.log('Converting layoutBlocks format to new layout structure')
-              setCurrentLayout({
+              const layoutBlocksLayout: Layout = {
                 id: 'layout-1',
-                type: 1,
+                type: 1 as const,
                 columns: [{
                   id: 'column-1',
                   blocks: parsedContent.layoutBlocks.map((block: ContentBlock) => ({
@@ -563,15 +584,17 @@ export default function EditCaseStudy() {
                     margin: block.margin || 8
                   }))
                 }]
-              })
+              }
+              setCurrentLayout(layoutBlocksLayout)
             }
             else {
               console.log('No recognizable content structure, using default layout')
-              setCurrentLayout({
+              const noContentLayout: Layout = {
                 id: 'layout-1',
-                type: 1,
+                type: 1 as const,
                 columns: [{ id: 'column-1', blocks: [] }]
-              })
+              }
+              setCurrentLayout(noContentLayout)
             }
             
             if (parsedContent.availableBlocks && Array.isArray(parsedContent.availableBlocks)) {
@@ -585,9 +608,9 @@ export default function EditCaseStudy() {
             console.log('Treating content as plain text or legacy format')
             
             // Try to handle as legacy plain text content
-            setCurrentLayout({
+            const legacyTextLayout: Layout = {
               id: 'layout-1',
-              type: 1,
+              type: 1 as const,
               columns: [{
                 id: 'column-1',
                 blocks: [{
@@ -598,40 +621,64 @@ export default function EditCaseStudy() {
                   margin: 8
                 }]
               }]
-            })
+            }
+            setCurrentLayout(legacyTextLayout)
             setAvailableBlocks([])
           }
         } else {
-          console.log('No content found, initializing with default layout')
-          setCurrentLayout({
+          console.log('❌ No content found in database, initializing with default layout')
+          const defaultLayout: Layout = {
             id: 'layout-1',
-            type: 1,
+            type: 1 as const,
             columns: [{ id: 'column-1', blocks: [] }]
-          })
+          }
+          console.log('🔧 Setting default layout:', defaultLayout)
+          setCurrentLayout(defaultLayout)
           setAvailableBlocks([])
+          console.log('✅ Default layout set (no content case)')
         }
 
         // Set media data
         setMediaType(data.mediaType || MediaType.IMAGE_ONLY)
         setFeaturedVideo(data.featuredVideo || '')
+        
+        console.log('🎬 Media type set:', data.mediaType || MediaType.IMAGE_ONLY)
+        console.log('🎥 Featured video:', data.featuredVideo || 'none')
 
       } else {
-        console.error('Case study not found')
+        console.error('❌ API Error - Case study not found, status:', response.status)
+        const errorText = await response.text()
+        console.error('❌ API Error response:', errorText)
         router.push('/admin/dashboard')
       }
     } catch (error) {
-      console.error('Error fetching case study:', error)
+      console.error('❌ Network/Parse Error fetching case study:', error)
       router.push('/admin/dashboard')
     } finally {
+      console.log('🏁 Fetch complete, setting loading to false')
       setLoading(false)
     }
   }, [params.id, router])
 
   useEffect(() => {
     if (params.id) {
+      console.log('🚀 Starting fetchCaseStudy for ID:', params.id)
       fetchCaseStudy()
     }
   }, [params.id, fetchCaseStudy])
+
+  // Debug current state
+  useEffect(() => {
+    console.log('🔍 Current State Debug:')
+    console.log('  - Loading:', loading)
+    console.log('  - Current layout:', currentLayout)
+    console.log('  - Layout columns:', currentLayout.columns?.length || 0)
+    console.log('  - Total blocks in all columns:', 
+      currentLayout.columns?.reduce((total, col) => total + (col.blocks?.length || 0), 0) || 0
+    )
+    console.log('  - Available blocks:', availableBlocks.length)
+    console.log('  - Form title:', formData.title)
+  }, [loading, currentLayout, availableBlocks, formData.title])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
