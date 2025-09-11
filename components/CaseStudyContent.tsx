@@ -215,9 +215,13 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
 
         {block.type === 'text' && block.content && (
           <div className="prose prose-lg max-w-none">
-            <div className="text-slate-700 leading-relaxed whitespace-pre-wrap">
-              {block.content}
-            </div>
+            <MDEditor 
+              source={block.content} 
+              style={{ 
+                backgroundColor: 'transparent',
+                color: '#334155'
+              }}
+            />
           </div>
         )}
         
