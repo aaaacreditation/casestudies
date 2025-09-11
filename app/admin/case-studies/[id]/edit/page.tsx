@@ -519,15 +519,54 @@ export default function EditCaseStudy() {
         })
 
         // Parse and populate content blocks
+        console.log('Raw content from database:', data.content)
+        
         if (data.content) {
           try {
             const parsedContent = JSON.parse(data.content)
-            console.log('Parsed content:', parsedContent)
+            console.log('Parsed content structure:', parsedContent)
+            console.log('Layout exists:', !!parsedContent.layout)
+            console.log('Available blocks exists:', !!parsedContent.availableBlocks)
             
+            // Handle new format with layout structure
             if (parsedContent.layout && parsedContent.layout.columns) {
+              console.log('Loading layout with columns:', parsedContent.layout.columns.length)
               setCurrentLayout(parsedContent.layout)
-            } else {
-              // Initialize with default layout
+            }
+            // Handle legacy format - array of blocks
+            else if (Array.isArray(parsedContent)) {
+              console.log('Converting legacy format to new layout structure')
+              setCurrentLayout({
+                id: 'layout-1',
+                type: 1,
+                columns: [{
+                  id: 'column-1',
+                  blocks: parsedContent.map((block: ContentBlock) => ({
+                    ...block,
+                    padding: block.padding || 16,
+                    margin: block.margin || 8
+                  }))
+                }]
+              })
+            }
+            // Handle old format with layoutBlocks
+            else if (parsedContent.layoutBlocks && Array.isArray(parsedContent.layoutBlocks)) {
+              console.log('Converting layoutBlocks format to new layout structure')
+              setCurrentLayout({
+                id: 'layout-1',
+                type: 1,
+                columns: [{
+                  id: 'column-1',
+                  blocks: parsedContent.layoutBlocks.map((block: ContentBlock) => ({
+                    ...block,
+                    padding: block.padding || 16,
+                    margin: block.margin || 8
+                  }))
+                }]
+              })
+            }
+            else {
+              console.log('No recognizable content structure, using default layout')
               setCurrentLayout({
                 id: 'layout-1',
                 type: 1,
@@ -536,22 +575,34 @@ export default function EditCaseStudy() {
             }
             
             if (parsedContent.availableBlocks && Array.isArray(parsedContent.availableBlocks)) {
+              console.log('Loading available blocks:', parsedContent.availableBlocks.length)
               setAvailableBlocks(parsedContent.availableBlocks)
             } else {
               setAvailableBlocks([])
             }
           } catch (error) {
-            console.error('Error parsing content:', error)
-            // Initialize with default layout
+            console.error('Error parsing content JSON:', error)
+            console.log('Treating content as plain text or legacy format')
+            
+            // Try to handle as legacy plain text content
             setCurrentLayout({
               id: 'layout-1',
               type: 1,
-              columns: [{ id: 'column-1', blocks: [] }]
+              columns: [{
+                id: 'column-1',
+                blocks: [{
+                  id: 'legacy-text-1',
+                  type: 'text',
+                  content: data.content,
+                  padding: 16,
+                  margin: 8
+                }]
+              }]
             })
             setAvailableBlocks([])
           }
         } else {
-          // No content yet, initialize with default layout
+          console.log('No content found, initializing with default layout')
           setCurrentLayout({
             id: 'layout-1',
             type: 1,
