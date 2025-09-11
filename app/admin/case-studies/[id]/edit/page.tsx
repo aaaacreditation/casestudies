@@ -75,7 +75,9 @@ interface Section {
 
 interface PageLayout {
   id: string
-  sections: Section[]
+  type?: number
+  sections?: Section[]
+  columns?: LayoutColumn[]
 }
 
 // Layout Templates
@@ -782,7 +784,7 @@ export default function EditCaseStudy() {
                     }))
                   }]
                 }
-                setCurrentLayout(updatedLayout)
+                setPageLayout(updatedLayout)
                 setAvailableBlocks([]) // Clear availableBlocks since they're now in layout
                 console.log('✅ Successfully moved all content blocks to layout columns')
               } else {
@@ -796,7 +798,7 @@ export default function EditCaseStudy() {
             console.log('Treating content as plain text or legacy format')
             
             // Try to handle as legacy plain text content
-            const legacyTextLayout: Layout = {
+            const legacyTextLayout: PageLayout = {
               id: 'layout-1',
               type: 1 as const,
               columns: [{
@@ -810,18 +812,18 @@ export default function EditCaseStudy() {
                 }]
               }]
             }
-            setCurrentLayout(legacyTextLayout)
+            setPageLayout(legacyTextLayout)
             setAvailableBlocks([])
           }
         } else {
           console.log('❌ No content found in database, initializing with default layout')
-          const defaultLayout: Layout = {
+          const defaultLayout: PageLayout = {
             id: 'layout-1',
             type: 1 as const,
             columns: [{ id: 'column-1', blocks: [] }]
           }
           console.log('🔧 Setting default layout:', defaultLayout)
-          setCurrentLayout(defaultLayout)
+          setPageLayout(defaultLayout)
           setAvailableBlocks([])
           console.log('✅ Default layout set (no content case)')
         }
@@ -859,14 +861,14 @@ export default function EditCaseStudy() {
   useEffect(() => {
     console.log('🔍 Current State Debug:')
     console.log('  - Loading:', loading)
-    console.log('  - Current layout:', currentLayout)
-    console.log('  - Layout columns:', currentLayout.columns?.length || 0)
+    console.log('  - Current layout:', pageLayout)
+    console.log('  - Layout columns:', pageLayout.columns?.length || 0)
     console.log('  - Total blocks in all columns:', 
-      currentLayout.columns?.reduce((total, col) => total + (col.blocks?.length || 0), 0) || 0
+      pageLayout.columns?.reduce((total: number, col: LayoutColumn) => total + (col.blocks?.length || 0), 0) || 0
     )
     console.log('  - Available blocks:', availableBlocks.length)
     console.log('  - Form title:', formData.title)
-  }, [loading, currentLayout, availableBlocks, formData.title])
+  }, [loading, pageLayout, availableBlocks, formData.title])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -893,20 +895,38 @@ export default function EditCaseStudy() {
       columnId: columnId
     }
     
-    setCurrentLayout(prev => ({
-      ...prev,
-      columns: prev.columns.map(col => 
-        col.id === columnId 
-          ? { ...col, blocks: [...col.blocks, newBlock] }
-          : col
-      )
-    }))
+    setPageLayout(prev => {
+      // Handle both direct columns and sections with columns
+      if (prev.columns) {
+        return {
+          ...prev,
+          columns: prev.columns.map(col => 
+            col.id === columnId 
+              ? { ...col, blocks: [...(col.blocks || []), newBlock] }
+              : col
+          )
+        }
+      } else if (prev.sections) {
+        return {
+          ...prev,
+          sections: prev.sections.map(section => ({
+            ...section,
+            columns: section.columns.map(col => 
+              col.id === columnId 
+                ? { ...col, blocks: [...(col.blocks || []), newBlock] }
+                : col
+            )
+          }))
+        }
+      }
+      return prev;
+    })
   }
 
   const updateBlock = (id: string, updates: Partial<ContentBlock>) => {
     setPageLayout(prev => ({
       ...prev,
-      sections: prev.sections.map(section => ({
+      sections: prev.sections?.map(section => ({
         ...section,
         columns: section.columns.map(column => ({
           ...column,
@@ -925,7 +945,7 @@ export default function EditCaseStudy() {
   const deleteBlock = (id: string) => {
     setPageLayout(prev => ({
       ...prev,
-      sections: prev.sections.map(section => ({
+      sections: prev.sections?.map(section => ({
         ...section,
         columns: section.columns.map(column => ({
           ...column,
@@ -944,21 +964,21 @@ export default function EditCaseStudy() {
     }
     setPageLayout(prev => ({
       ...prev,
-      sections: [...prev.sections, newSection]
+      sections: [...(prev.sections || []), newSection]
     }))
   }
 
   const removeSection = (sectionId: string) => {
     setPageLayout(prev => ({
       ...prev,
-      sections: prev.sections.filter(section => section.id !== sectionId)
+      sections: prev.sections?.filter(section => section.id !== sectionId) || []
     }))
   }
 
   const addColumnToSection = (sectionId: string) => {
     setPageLayout(prev => ({
       ...prev,
-      sections: prev.sections.map(section => {
+      sections: prev.sections?.map(section => {
         if (section.id === sectionId) {
           const newColumn: LayoutColumn = {
             id: `column-${Date.now()}`,
@@ -983,7 +1003,7 @@ export default function EditCaseStudy() {
   const removeColumnFromSection = (sectionId: string, columnId: string) => {
     setPageLayout(prev => ({
       ...prev,
-      sections: prev.sections.map(section => {
+      sections: prev.sections?.map(section => {
         if (section.id === sectionId && section.columns.length > 1) {
           const remainingColumns = section.columns.filter(col => col.id !== columnId)
           // Redistribute widths
@@ -1006,10 +1026,10 @@ export default function EditCaseStudy() {
     for (let i = 0; i < type; i++) {
       newColumns.push({
         id: `column-${i + 1}`,
-        blocks: currentLayout.columns[i]?.blocks || []
+        blocks: pageLayout.columns?.[i]?.blocks || []
       })
     }
-    setCurrentLayout({
+    setPageLayout({
       id: generateId(),
       type,
       columns: newColumns
@@ -1017,37 +1037,53 @@ export default function EditCaseStudy() {
   }
 
   const addColumn = () => {
-    const newColumnId = `column-${currentLayout.columns.length + 1}`
+    const columnsLength = pageLayout.columns?.length || 0
+    const newColumnId = `column-${columnsLength + 1}`
     const newColumn: LayoutColumn = {
       id: newColumnId,
       blocks: []
     }
-    setCurrentLayout(prev => ({
-      ...prev,
-      columns: [...prev.columns, newColumn]
-    }))
+    setPageLayout(prev => {
+      if (prev.columns) {
+        return {
+          ...prev,
+          columns: [...prev.columns, newColumn]
+        }
+      }
+      return prev
+    })
   }
 
   const removeColumn = () => {
-    if (currentLayout.columns.length > 1) {
-      const lastColumn = currentLayout.columns[currentLayout.columns.length - 1]
+    if (pageLayout.columns && pageLayout.columns.length > 1) {
+      const lastColumn = pageLayout.columns[pageLayout.columns.length - 1]
       // Move blocks from the last column to the first column
-      if (lastColumn.blocks.length > 0) {
-        setCurrentLayout(prev => ({
-          ...prev,
-          columns: [
-            {
-              ...prev.columns[0],
-              blocks: [...prev.columns[0].blocks, ...lastColumn.blocks]
-            },
-            ...prev.columns.slice(1, -1)
-          ]
-        }))
+      if (lastColumn.blocks && lastColumn.blocks.length > 0) {
+        setPageLayout(prev => {
+          if (prev.columns) {
+            return {
+              ...prev,
+              columns: [
+                {
+                  ...prev.columns[0],
+                  blocks: [...(prev.columns[0].blocks || []), ...(lastColumn.blocks || [])]
+                },
+                ...prev.columns.slice(1, -1)
+              ]
+            }
+          }
+          return prev
+        })
       } else {
-        setCurrentLayout(prev => ({
-          ...prev,
-          columns: prev.columns.slice(0, -1)
-        }))
+        setPageLayout(prev => {
+          if (prev.columns) {
+            return {
+              ...prev,
+              columns: prev.columns.slice(0, -1)
+            }
+          }
+          return prev
+        })
       }
     }
   }
@@ -1087,7 +1123,7 @@ export default function EditCaseStudy() {
       
       setPageLayout(prev => ({
         ...prev,
-        sections: prev.sections.map(section => ({
+        sections: prev.sections?.map(section => ({
           ...section,
           columns: section.columns.map(col => 
             col.id === targetColumnId 
@@ -1101,11 +1137,11 @@ export default function EditCaseStudy() {
 
     // Handle section reordering
     if (activeId.startsWith('section-') && overId.startsWith('section-')) {
-      const activeIndex = pageLayout.sections.findIndex(section => section.id === activeId)
-      const overIndex = pageLayout.sections.findIndex(section => section.id === overId)
+      const activeIndex = pageLayout.sections?.findIndex(section => section.id === activeId) ?? -1
+      const overIndex = pageLayout.sections?.findIndex(section => section.id === overId) ?? -1
       
       if (activeIndex !== overIndex) {
-        const newSections = [...pageLayout.sections]
+        const newSections = [...(pageLayout.sections || [])]
         const [removed] = newSections.splice(activeIndex, 1)
         newSections.splice(overIndex, 0, removed)
         
@@ -1123,7 +1159,7 @@ export default function EditCaseStudy() {
       let sourceColumnId: string | undefined
       let blockToMove: ContentBlock | undefined
       
-      for (const section of pageLayout.sections) {
+      for (const section of pageLayout.sections || []) {
         for (const column of section.columns) {
           const foundBlock = column.blocks.find(block => block.id === activeId)
           if (foundBlock) {
@@ -1138,7 +1174,7 @@ export default function EditCaseStudy() {
       if (sourceColumnId && blockToMove && sourceColumnId !== overId) {
         setPageLayout(prev => ({
           ...prev,
-          sections: prev.sections.map(section => ({
+          sections: prev.sections?.map(section => ({
             ...section,
             columns: section.columns.map(col => {
               if (col.id === sourceColumnId) {
@@ -1412,9 +1448,9 @@ export default function EditCaseStudy() {
 
                 {/* Page Sections */}
                 <div className="col-span-9">
-                  <SortableContext items={pageLayout.sections.map(section => section.id)} strategy={verticalListSortingStrategy}>
+                  <SortableContext items={(pageLayout.sections || []).map(section => section.id)} strategy={verticalListSortingStrategy}>
                     <div className="space-y-4">
-                      {pageLayout.sections.map((section, index) => (
+                      {pageLayout.sections?.map((section, index) => (
                         <DroppableSection
                           key={section.id}
                           section={section}
@@ -1448,7 +1484,7 @@ export default function EditCaseStudy() {
             </DndContext>
 
             {/* Empty State */}
-            {pageLayout.sections.length === 0 && (
+            {pageLayout.sections?.length === 0 && (
               <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center mt-6">
                 <Square className="mx-auto h-12 w-12 text-slate-400 mb-4" />
                 <h4 className="text-lg font-semibold text-slate-700 mb-2">Start Building Your Page</h4>
