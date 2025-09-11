@@ -61,16 +61,21 @@ interface ContentBlock {
   margin?: number // Margin in pixels
 }
 
-// Layout Types
+// Page Builder Types
 interface LayoutColumn {
   id: string
   blocks: ContentBlock[]
+  width?: number // percentage width (e.g., 50 for 50%)
 }
 
-interface Layout {
+interface Section {
   id: string
-  type: 1 | 2 | 3 // number of columns
   columns: LayoutColumn[]
+}
+
+interface PageLayout {
+  id: string
+  sections: Section[]
 }
 
 // Layout Templates
@@ -454,6 +459,101 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
   )
 }
 
+// Droppable Section Component  
+interface DroppableSectionProps {
+  section: Section
+  sectionIndex: number
+  onUpdateBlock: (id: string, updates: Partial<ContentBlock>) => void
+  onDeleteBlock: (id: string) => void
+  onAddColumn: (sectionId: string) => void
+  onRemoveColumn: (sectionId: string, columnId: string) => void
+}
+
+const DroppableSection: React.FC<DroppableSectionProps> = ({ 
+  section, 
+  sectionIndex,
+  onUpdateBlock, 
+  onDeleteBlock,
+  onAddColumn,
+  onRemoveColumn
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: section.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.8 : 1
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-white border-2 border-slate-200 rounded-lg p-4 mb-4 ${
+        isDragging ? 'shadow-lg' : ''
+      }`}
+    >
+      {/* Section Header */}
+      <div className="flex items-center justify-between mb-4 p-2 bg-slate-50 rounded-lg">
+        <div className="flex items-center gap-2">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-1 hover:bg-slate-200 rounded"
+          >
+            <GripVertical className="w-4 h-4 text-slate-400" />
+          </div>
+          <span className="text-sm font-medium text-slate-700">Section {sectionIndex + 1}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onAddColumn(section.id)}
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
+          >
+            <Square className="w-3 h-3" />
+            Add Column
+          </button>
+          {section.columns.length > 1 && (
+            <button
+              type="button"
+              onClick={() => onRemoveColumn(section.id, section.columns[section.columns.length - 1].id)}
+              className="flex items-center gap-1 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+            >
+              <X className="w-3 h-3" />
+              Remove Column
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Columns Grid */}
+      <div 
+        className="grid gap-4" 
+        style={{ 
+          gridTemplateColumns: section.columns.map(col => `${col.width || 100/section.columns.length}fr`).join(' ')
+        }}
+      >
+        {section.columns.map((column) => (
+          <DroppableColumn
+            key={column.id}
+            column={column}
+            onUpdateBlock={onUpdateBlock}
+            onDeleteBlock={onDeleteBlock}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // Droppable Column Component
 interface DroppableColumnProps {
   column: LayoutColumn
@@ -471,18 +571,12 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[400px] border-2 border-dashed rounded-lg p-4 transition-colors ${
+      className={`min-h-[300px] border-2 border-dashed rounded-lg p-3 transition-colors ${
         isOver ? 'border-[#0a4373] bg-[#0a4373]/5' : 'border-slate-300'
       }`}
     >
-      <div className="flex items-center justify-center mb-4">
-        <h3 className="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
-          Column {column.id.split('-')[1]}
-        </h3>
-      </div>
-
       <SortableContext items={column.blocks.map(block => block.id)} strategy={verticalListSortingStrategy}>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {column.blocks.map(block => (
             <DraggableBlock
               key={block.id}
@@ -495,10 +589,9 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
       </SortableContext>
 
       {column.blocks.length === 0 && (
-        <div className="text-center py-12 text-slate-400">
-          <GripVertical className="mx-auto h-12 w-12 text-slate-300 mb-3" />
-          <p className="text-sm">Drag components from the palette to add content</p>
-          <p className="text-xs text-slate-400 mt-1">Title, Text, Image, or Video</p>
+        <div className="text-center py-8 text-slate-400">
+          <GripVertical className="mx-auto h-8 w-8 text-slate-300 mb-2" />
+          <p className="text-xs">Drop components here</p>
         </div>
       )}
     </div>
@@ -524,11 +617,13 @@ export default function EditCaseStudy() {
     companyDescription: ''
   })
 
-  // Content Management State
-  const [currentLayout, setCurrentLayout] = useState<Layout>({
-    id: 'layout-1',
-    type: 1,
-    columns: [{ id: 'column-1', blocks: [] }]
+  // Page Builder State
+  const [pageLayout, setPageLayout] = useState<PageLayout>({
+    id: 'page-1',
+    sections: [{
+      id: 'section-1',
+      columns: [{ id: 'column-1', blocks: [], width: 100 }]
+    }]
   })
   
   const [availableBlocks, setAvailableBlocks] = useState<ContentBlock[]>([])
@@ -809,13 +904,16 @@ export default function EditCaseStudy() {
   }
 
   const updateBlock = (id: string, updates: Partial<ContentBlock>) => {
-    setCurrentLayout(prev => ({
+    setPageLayout(prev => ({
       ...prev,
-      columns: prev.columns.map(column => ({
-        ...column,
-        blocks: column.blocks.map(block => 
-          block.id === id ? { ...block, ...updates } : block
-        )
+      sections: prev.sections.map(section => ({
+        ...section,
+        columns: section.columns.map(column => ({
+          ...column,
+          blocks: column.blocks.map(block => 
+            block.id === id ? { ...block, ...updates } : block
+          )
+        }))
       }))
     }))
 
@@ -825,15 +923,82 @@ export default function EditCaseStudy() {
   }
 
   const deleteBlock = (id: string) => {
-    setCurrentLayout(prev => ({
+    setPageLayout(prev => ({
       ...prev,
-      columns: prev.columns.map(column => ({
-        ...column,
-        blocks: column.blocks.filter(block => block.id !== id)
+      sections: prev.sections.map(section => ({
+        ...section,
+        columns: section.columns.map(column => ({
+          ...column,
+          blocks: column.blocks.filter(block => block.id !== id)
+        }))
       }))
     }))
 
     setAvailableBlocks(prev => prev.filter(block => block.id !== id))
+  }
+
+  const addSection = () => {
+    const newSection: Section = {
+      id: `section-${Date.now()}`,
+      columns: [{ id: `column-${Date.now()}`, blocks: [], width: 100 }]
+    }
+    setPageLayout(prev => ({
+      ...prev,
+      sections: [...prev.sections, newSection]
+    }))
+  }
+
+  const removeSection = (sectionId: string) => {
+    setPageLayout(prev => ({
+      ...prev,
+      sections: prev.sections.filter(section => section.id !== sectionId)
+    }))
+  }
+
+  const addColumnToSection = (sectionId: string) => {
+    setPageLayout(prev => ({
+      ...prev,
+      sections: prev.sections.map(section => {
+        if (section.id === sectionId) {
+          const newColumn: LayoutColumn = {
+            id: `column-${Date.now()}`,
+            blocks: [],
+            width: 100 / (section.columns.length + 1)
+          }
+          // Redistribute widths
+          const updatedColumns = section.columns.map(col => ({
+            ...col,
+            width: 100 / (section.columns.length + 1)
+          }))
+          return {
+            ...section,
+            columns: [...updatedColumns, newColumn]
+          }
+        }
+        return section
+      })
+    }))
+  }
+
+  const removeColumnFromSection = (sectionId: string, columnId: string) => {
+    setPageLayout(prev => ({
+      ...prev,
+      sections: prev.sections.map(section => {
+        if (section.id === sectionId && section.columns.length > 1) {
+          const remainingColumns = section.columns.filter(col => col.id !== columnId)
+          // Redistribute widths
+          const updatedColumns = remainingColumns.map(col => ({
+            ...col,
+            width: 100 / remainingColumns.length
+          }))
+          return {
+            ...section,
+            columns: updatedColumns
+          }
+        }
+        return section
+      })
+    }))
   }
 
   const changeLayout = (type: 1 | 2 | 3) => {
@@ -920,44 +1085,72 @@ export default function EditCaseStudy() {
         columnId: targetColumnId
       }
       
-      setCurrentLayout(prev => ({
+      setPageLayout(prev => ({
         ...prev,
-        columns: prev.columns.map(col => 
-          col.id === targetColumnId 
-            ? { ...col, blocks: [...col.blocks, newBlock] }
-            : col
-        )
+        sections: prev.sections.map(section => ({
+          ...section,
+          columns: section.columns.map(col => 
+            col.id === targetColumnId 
+              ? { ...col, blocks: [...col.blocks, newBlock] }
+              : col
+          )
+        }))
       }))
+      return
+    }
+
+    // Handle section reordering
+    if (activeId.startsWith('section-') && overId.startsWith('section-')) {
+      const activeIndex = pageLayout.sections.findIndex(section => section.id === activeId)
+      const overIndex = pageLayout.sections.findIndex(section => section.id === overId)
+      
+      if (activeIndex !== overIndex) {
+        const newSections = [...pageLayout.sections]
+        const [removed] = newSections.splice(activeIndex, 1)
+        newSections.splice(overIndex, 0, removed)
+        
+        setPageLayout(prev => ({
+          ...prev,
+          sections: newSections
+        }))
+      }
       return
     }
 
     // Handle dropping into columns (existing block movement)
     if (overId.startsWith('column-')) {
-      const sourceColumnId = currentLayout.columns.find(col => 
-        col.blocks.some(block => block.id === activeId)
-      )?.id
+      // Find source column
+      let sourceColumnId: string | undefined
+      let blockToMove: ContentBlock | undefined
+      
+      for (const section of pageLayout.sections) {
+        for (const column of section.columns) {
+          const foundBlock = column.blocks.find(block => block.id === activeId)
+          if (foundBlock) {
+            sourceColumnId = column.id
+            blockToMove = foundBlock
+            break
+          }
+        }
+        if (blockToMove) break
+      }
 
-      const targetColumnId = overId
-
-      if (sourceColumnId && sourceColumnId !== targetColumnId) {
-        // Move block between columns
-        const sourceColumn = currentLayout.columns.find(col => col.id === sourceColumnId)
-        const blockToMove = sourceColumn?.blocks.find(block => block.id === activeId)
-
-        if (blockToMove) {
-          setCurrentLayout(prev => ({
-            ...prev,
-            columns: prev.columns.map(col => {
+      if (sourceColumnId && blockToMove && sourceColumnId !== overId) {
+        setPageLayout(prev => ({
+          ...prev,
+          sections: prev.sections.map(section => ({
+            ...section,
+            columns: section.columns.map(col => {
               if (col.id === sourceColumnId) {
                 return { ...col, blocks: col.blocks.filter(block => block.id !== activeId) }
               }
-              if (col.id === targetColumnId) {
-                return { ...col, blocks: [...col.blocks, { ...blockToMove, columnId: targetColumnId }] }
+              if (col.id === overId) {
+                return { ...col, blocks: [...col.blocks, { ...blockToMove!, columnId: overId }] }
               }
               return col
             })
           }))
-        }
+        }))
       }
     }
   }
@@ -975,7 +1168,7 @@ export default function EditCaseStudy() {
           subtitle: formData.subtitle,
           excerpt: formData.excerpt,
           content: JSON.stringify({
-            layout: currentLayout,
+            pageLayout: pageLayout,
             availableBlocks: availableBlocks
           }),
           mediaType: mediaType,
@@ -1152,50 +1345,16 @@ export default function EditCaseStudy() {
           {/* Content Builder */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-slate-900">Content Builder</h2>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-600">Columns:</span>
-                  {Object.entries(LAYOUT_TEMPLATES).map(([key, template]) => {
-                    const Icon = template.icon
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => changeLayout(parseInt(key) as 1 | 2 | 3)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          currentLayout.type === parseInt(key)
-                            ? 'bg-[#0a4373] text-white'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
-                        title={template.label}
-                      >
-                        <Icon className="w-4 h-4" />
-                      </button>
-                    )
-                  })}
-                </div>
-                <div className="h-4 w-px bg-slate-300"></div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => addColumn()}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm"
-                  >
-                    <Square className="w-4 h-4" />
-                    Add Column
-                  </button>
-                  {currentLayout.columns.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeColumn()}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm"
-                    >
-                      <X className="w-4 h-4" />
-                      Remove
-                    </button>
-                  )}
-                </div>
+              <h2 className="text-xl font-semibold text-slate-900">Page Builder</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={addSection}
+                  className="flex items-center gap-1 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
+                >
+                  <Square className="w-4 h-4" />
+                  Add Section
+                </button>
               </div>
             </div>
 
@@ -1205,7 +1364,7 @@ export default function EditCaseStudy() {
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
             >
-              {/* Component Palette and Layout Grid */}
+              {/* Component Palette and Page Builder */}
               <div className="grid grid-cols-12 gap-6">
                 {/* Component Palette */}
                 <div className="col-span-3">
@@ -1245,29 +1404,29 @@ export default function EditCaseStudy() {
                     
                     <div className="mt-6 p-4 bg-slate-50 rounded-lg">
                       <p className="text-xs text-slate-600">
-                        💡 <strong>Tip:</strong> Drag components from here into the columns to add content blocks.
+                        💡 <strong>Tip:</strong> Drag components into columns and sections to build your page.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Layout Columns */}
+                {/* Page Sections */}
                 <div className="col-span-9">
-                  <div 
-                    className="grid gap-6" 
-                    style={{ 
-                      gridTemplateColumns: `repeat(${currentLayout.columns.length}, 1fr)` 
-                    }}
-                  >
-                    {currentLayout.columns.map((column) => (
-                      <DroppableColumn
-                        key={column.id}
-                        column={column}
-                        onUpdateBlock={updateBlock}
-                        onDeleteBlock={deleteBlock}
-                      />
-                    ))}
-                  </div>
+                  <SortableContext items={pageLayout.sections.map(section => section.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-4">
+                      {pageLayout.sections.map((section, index) => (
+                        <DroppableSection
+                          key={section.id}
+                          section={section}
+                          sectionIndex={index}
+                          onUpdateBlock={updateBlock}
+                          onDeleteBlock={deleteBlock}
+                          onAddColumn={addColumnToSection}
+                          onRemoveColumn={removeColumnFromSection}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
                 </div>
               </div>
 
@@ -1289,11 +1448,11 @@ export default function EditCaseStudy() {
             </DndContext>
 
             {/* Empty State */}
-            {currentLayout.columns.every(col => col.blocks.length === 0) && (
+            {pageLayout.sections.length === 0 && (
               <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center mt-6">
-                <GripVertical className="mx-auto h-12 w-12 text-slate-400 mb-4" />
-                <h4 className="text-lg font-semibold text-slate-700 mb-2">Start Building Your Content</h4>
-                <p className="text-slate-500">Drag components from the palette on the left into the columns to create your case study</p>
+                <Square className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+                <h4 className="text-lg font-semibold text-slate-700 mb-2">Start Building Your Page</h4>
+                <p className="text-slate-500">Click &quot;Add Section&quot; to create your first section, then drag components into columns</p>
                 </div>
             )}
           </div>
