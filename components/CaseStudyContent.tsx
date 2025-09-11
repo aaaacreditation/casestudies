@@ -106,7 +106,7 @@ function ContentBlocks({ content }: { content: string }) {
 
   return (
     <>
-      {/* Render Layout */}
+      {/* Render Layout - maintaining the same structure as editor but with clean display */}
       <div className={`grid gap-8 ${
         layout.type === 1 ? 'grid-cols-1' :
         layout.type === 2 ? 'grid-cols-1 md:grid-cols-2' : 
@@ -117,6 +117,7 @@ function ContentBlocks({ content }: { content: string }) {
             key={column.id} 
             className="space-y-6"
           >
+            {/* Render blocks in the same order as they appear in the editor */}
             {column.blocks.map((block, blockIndex) => (
               <ContentBlockRenderer 
                 key={block.id} 
@@ -140,39 +141,41 @@ function ContentBlocks({ content }: { content: string }) {
   )
 }
 
-// Component to render individual content blocks elegantly for display
+// Component to render individual content blocks as clean article content
 function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: number }) {
+  const customPadding = block.padding || 0
+  const customMargin = block.margin || 0
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: (index % 10) * 0.1 }}
-      className="mb-8"
       style={{ 
-        paddingTop: `${block.padding || 0}px`, 
-        paddingBottom: `${block.padding || 0}px`,
-        marginTop: `${block.margin || 0}px`,
-        marginBottom: `${block.margin || 0}px`
+        paddingTop: customPadding > 0 ? `${customPadding}px` : undefined, 
+        paddingBottom: customPadding > 0 ? `${customPadding}px` : undefined,
+        marginTop: customMargin > 0 ? `${customMargin}px` : undefined,
+        marginBottom: customMargin > 0 ? `${customMargin}px` : undefined
       }}
     >
       {block.type === 'title' && block.content && (
-        <div className="mb-6">
-          {block.titleLevel === 1 && <h1 className="text-4xl font-bold text-slate-900 leading-tight mb-4">{block.content}</h1>}
-          {block.titleLevel === 2 && <h2 className="text-3xl font-semibold text-slate-900 leading-tight mb-4">{block.content}</h2>}
-          {block.titleLevel === 3 && <h3 className="text-2xl font-medium text-slate-900 leading-tight mb-3">{block.content}</h3>}
+        <>
+          {block.titleLevel === 1 && <h1 className="text-4xl font-bold text-slate-900 leading-tight mb-6">{block.content}</h1>}
+          {block.titleLevel === 2 && <h2 className="text-3xl font-semibold text-slate-900 leading-tight mb-5">{block.content}</h2>}
+          {block.titleLevel === 3 && <h3 className="text-2xl font-medium text-slate-900 leading-tight mb-4">{block.content}</h3>}
           {block.titleLevel === 4 && <h4 className="text-xl font-medium text-slate-900 leading-tight mb-3">{block.content}</h4>}
-          {block.titleLevel === 5 && <h5 className="text-lg font-medium text-slate-900 leading-tight mb-2">{block.content}</h5>}
+          {block.titleLevel === 5 && <h5 className="text-lg font-medium text-slate-900 leading-tight mb-3">{block.content}</h5>}
           {block.titleLevel === 6 && <h6 className="text-base font-medium text-slate-900 leading-tight mb-2">{block.content}</h6>}
-        </div>
+        </>
       )}
 
       {block.type === 'text' && block.content && (
-        <div className="prose prose-lg max-w-none mb-6">
+        <div className="prose prose-lg max-w-none text-slate-700 leading-relaxed mb-6">
           <MDEditor 
             source={block.content} 
             style={{ 
               backgroundColor: 'transparent',
-              color: '#334155'
+              color: '#374151'
             }}
           />
         </div>
@@ -180,19 +183,19 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
       
       {block.type === 'image' && (block.fileUrl || block.url) && (
         <div className="mb-8">
-          <div className="relative w-full max-w-4xl mx-auto">
+          <div className="relative w-full">
             <Image
               src={block.fileUrl || block.url || ''}
               alt={block.caption || 'Content image'}
               width={1200}
               height={800}
-              className="w-full h-auto object-contain rounded-lg shadow-md"
-              style={{ maxHeight: '600px' }}
+              className="w-full h-auto object-cover rounded-lg shadow-lg"
+              style={{ maxHeight: '500px' }}
               priority={false}
             />
           </div>
           {block.caption && (
-            <div className="mt-3 text-sm text-slate-600 text-center max-w-4xl mx-auto italic">
+            <div className="mt-3 text-sm text-slate-500 text-center italic">
               {block.caption}
             </div>
           )}
@@ -201,7 +204,7 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
       
       {block.type === 'video' && (
         <div className="mb-8">
-          <div className="relative h-96 rounded-lg overflow-hidden shadow-md">
+          <div className="relative w-full aspect-video rounded-lg overflow-hidden shadow-lg bg-slate-100">
             {block.url && isYouTubeUrl(block.url) ? (
               <iframe
                 src={`https://www.youtube.com/embed/${getYouTubeVideoId(block.url)}`}
@@ -220,7 +223,7 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
             ) : null}
           </div>
           {block.caption && (
-            <div className="mt-3 text-sm text-slate-600 text-center italic">
+            <div className="mt-3 text-sm text-slate-500 text-center italic">
               {block.caption}
             </div>
           )}
