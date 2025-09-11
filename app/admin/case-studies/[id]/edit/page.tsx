@@ -572,7 +572,7 @@ export default function EditCaseStudy() {
             }
             // Handle old format with layoutBlocks
             else if (parsedContent.layoutBlocks && Array.isArray(parsedContent.layoutBlocks)) {
-              console.log('Converting layoutBlocks format to new layout structure')
+              console.log('🔄 Converting layoutBlocks format to new layout structure')
               const layoutBlocksLayout: Layout = {
                 id: 'layout-1',
                 type: 1 as const,
@@ -580,12 +580,14 @@ export default function EditCaseStudy() {
                   id: 'column-1',
                   blocks: parsedContent.layoutBlocks.map((block: ContentBlock) => ({
                     ...block,
+                    columnId: 'column-1',
                     padding: block.padding || 16,
                     margin: block.margin || 8
                   }))
                 }]
               }
               setCurrentLayout(layoutBlocksLayout)
+              console.log('✅ Converted', parsedContent.layoutBlocks.length, 'layoutBlocks to layout columns')
             }
             else {
               console.log('No recognizable content structure, using default layout')
@@ -597,9 +599,53 @@ export default function EditCaseStudy() {
               setCurrentLayout(noContentLayout)
             }
             
+            // Handle availableBlocks and layoutBlocks - merge them for editing
+            const allContentBlocks: ContentBlock[] = []
+            
+            // Collect blocks from availableBlocks
             if (parsedContent.availableBlocks && Array.isArray(parsedContent.availableBlocks)) {
-              console.log('Loading available blocks:', parsedContent.availableBlocks.length)
-              setAvailableBlocks(parsedContent.availableBlocks)
+              console.log('📦 Found availableBlocks:', parsedContent.availableBlocks.length)
+              allContentBlocks.push(...parsedContent.availableBlocks)
+            }
+            
+            // Collect blocks from layoutBlocks (legacy format)
+            if (parsedContent.layoutBlocks && Array.isArray(parsedContent.layoutBlocks)) {
+              console.log('📦 Found layoutBlocks:', parsedContent.layoutBlocks.length)
+              allContentBlocks.push(...parsedContent.layoutBlocks)
+            }
+            
+            // If we have content blocks but empty layout columns, move them to first column for editing
+            if (allContentBlocks.length > 0) {
+              let shouldMoveToLayout = false
+              
+              if (parsedContent.layout && parsedContent.layout.columns) {
+                const totalBlocksInColumns = parsedContent.layout.columns.reduce((total: number, col: LayoutColumn) => total + (col.blocks?.length || 0), 0)
+                shouldMoveToLayout = totalBlocksInColumns === 0
+              } else {
+                shouldMoveToLayout = true
+              }
+              
+              if (shouldMoveToLayout) {
+                console.log('🔄 Moving', allContentBlocks.length, 'content blocks to first column for editing')
+                const updatedLayout = {
+                  id: 'layout-1',
+                  type: 1 as const,
+                  columns: [{
+                    id: 'column-1',
+                    blocks: allContentBlocks.map((block: ContentBlock) => ({ 
+                      ...block, 
+                      columnId: 'column-1',
+                      padding: block.padding || 16,
+                      margin: block.margin || 8
+                    }))
+                  }]
+                }
+                setCurrentLayout(updatedLayout)
+                setAvailableBlocks([]) // Clear availableBlocks since they're now in layout
+                console.log('✅ Successfully moved all content blocks to layout columns')
+              } else {
+                setAvailableBlocks(allContentBlocks)
+              }
             } else {
               setAvailableBlocks([])
             }
