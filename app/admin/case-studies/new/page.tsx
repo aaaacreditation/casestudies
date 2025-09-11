@@ -263,12 +263,10 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
         )}
 
         {block.type === 'text' && (
-          <textarea
+          <RichTextEditor
             value={block.content || ''}
-            onChange={(e) => onUpdate(block.id, { content: e.target.value })}
+            onChange={(value) => onUpdate(block.id, { content: value })}
             placeholder="Click to edit text content..."
-            className="w-full min-h-[100px] p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none resize-vertical"
-            style={{ fontFamily: 'inherit', fontSize: '14px', lineHeight: '1.5' }}
           />
         )}
         

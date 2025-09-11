@@ -165,26 +165,6 @@ const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDel
 
   const columnBlocks = column.blocks || []
 
-  // Function to add a new block to this column
-  const addBlockToColumn = (type: 'text' | 'image' | 'video' | 'title') => {
-    const newBlock: ContentBlock = {
-      id: Date.now().toString(),
-      type,
-      content: type === 'text' || type === 'title' ? 'Click to edit...' : undefined,
-      file: undefined,
-      url: undefined,
-      caption: undefined,
-      titleLevel: type === 'title' ? 1 : undefined,
-      padding: 16,
-      margin: 8,
-      columnId: column.id
-    }
-    
-    // Add block directly to this column
-    const updatedBlocks = [...columnBlocks, newBlock]
-    onUpdate(column.id, { blocks: updatedBlocks })
-  }
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -300,17 +280,15 @@ const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDel
                   }}
                 >
                   {block.type === 'text' && (
-                    <textarea
+                    <RichTextEditor
                       value={block.content || ''}
-                      onChange={(e) => {
+                      onChange={(value) => {
                         const updatedBlocks = columnBlocks.map(b => 
-                          b.id === block.id ? { ...b, content: e.target.value } : b
+                          b.id === block.id ? { ...b, content: value } : b
                         )
                         onUpdate(column.id, { blocks: updatedBlocks })
                       }}
                       placeholder="Click to edit text content..."
-                      className="w-full min-h-[100px] p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none resize-vertical"
-                      style={{ fontFamily: 'inherit', fontSize: '14px', lineHeight: '1.5' }}
                     />
                   )}
                   {block.type === 'title' && (
@@ -388,7 +366,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDel
             <div className="flex flex-wrap gap-2 justify-center">
               <button
                 type="button"
-                onClick={() => addBlockToColumn('title')}
+                onClick={() => onAddBlock(column.id, 'title')}
                 className="flex items-center gap-1 px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
               >
                 <Type className="w-4 h-4" />
@@ -396,7 +374,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDel
               </button>
               <button
                 type="button"
-                onClick={() => addBlockToColumn('text')}
+                onClick={() => onAddBlock(column.id, 'text')}
                 className="flex items-center gap-1 px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
               >
                 <FileText className="w-4 h-4" />
@@ -404,7 +382,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDel
               </button>
               <button
                 type="button"
-                onClick={() => addBlockToColumn('image')}
+                onClick={() => onAddBlock(column.id, 'image')}
                 className="flex items-center gap-1 px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
               >
                 <ImageIcon className="w-4 h-4" />
@@ -412,7 +390,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDel
               </button>
               <button
                 type="button"
-                onClick={() => addBlockToColumn('video')}
+                onClick={() => onAddBlock(column.id, 'video')}
                 className="flex items-center gap-1 px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
               >
                 <Video className="w-4 h-4" />
@@ -429,7 +407,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDel
             <div className="flex flex-wrap gap-1 justify-center">
               <button
                 type="button"
-                onClick={() => addBlockToColumn('title')}
+                onClick={() => onAddBlock(column.id, 'title')}
                 className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-slate-200 rounded hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
               >
                 <Type className="w-3 h-3" />
@@ -437,7 +415,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDel
               </button>
               <button
                 type="button"
-                onClick={() => addBlockToColumn('text')}
+                onClick={() => onAddBlock(column.id, 'text')}
                 className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-slate-200 rounded hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
               >
                 <FileText className="w-3 h-3" />
@@ -445,7 +423,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDel
               </button>
               <button
                 type="button"
-                onClick={() => addBlockToColumn('image')}
+                onClick={() => onAddBlock(column.id, 'image')}
                 className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-slate-200 rounded hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
               >
                 <ImageIcon className="w-3 h-3" />
@@ -453,7 +431,7 @@ const EditableColumn: React.FC<EditableColumnProps> = ({ column, onUpdate, onDel
               </button>
               <button
                 type="button"
-                onClick={() => addBlockToColumn('video')}
+                onClick={() => onAddBlock(column.id, 'video')}
                 className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-slate-200 rounded hover:border-[#0a4373] hover:text-[#0a4373] transition-colors"
               >
                 <Video className="w-3 h-3" />
@@ -701,19 +679,29 @@ export default function EditCaseStudy() {
               // Extract all blocks from layout columns for easy access
               const allLayoutBlocks = parsedContent.layout.columns.flatMap((col: LayoutColumn) => col.blocks || [])
               setLayoutBlocks(allLayoutBlocks)
+            } else {
+              // No layout found, initialize with default layout
+              setCurrentLayout({
+                id: 'layout-1',
+                type: 1,
+                columns: [{ id: 'column-1', blocks: [] }]
+              })
+              setLayoutBlocks([])
             }
             
             if (parsedContent.availableBlocks && Array.isArray(parsedContent.availableBlocks)) {
               // Set available blocks that aren't in columns yet
               setAvailableBlocks(parsedContent.availableBlocks)
+            } else {
+              setAvailableBlocks([])
             }
           } catch (error) {
             console.error('Error parsing content:', error)
             // If parsing fails, initialize with empty structure
             setCurrentLayout({
-              id: '1',
+              id: 'layout-1',
               type: 1,
-              columns: [{ id: 'col-1', blocks: [] }]
+              columns: [{ id: 'column-1', blocks: [] }]
             })
             setAvailableBlocks([])
             setLayoutBlocks([])
@@ -721,9 +709,9 @@ export default function EditCaseStudy() {
         } else {
           // No content yet, initialize with default layout
           setCurrentLayout({
-            id: '1',
+            id: 'layout-1',
             type: 1,
-            columns: [{ id: 'col-1', blocks: [] }]
+            columns: [{ id: 'column-1', blocks: [] }]
           })
           setAvailableBlocks([])
           setLayoutBlocks([])
