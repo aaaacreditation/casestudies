@@ -53,6 +53,7 @@ interface ContentBlock {
   content?: string
   file?: File
   url?: string
+  fileUrl?: string // For existing uploaded images
   caption?: string
   columnId?: string
   titleLevel?: 1 | 2 | 3 | 4 | 5 | 6 // For title blocks
@@ -273,7 +274,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
 
         {block.type === 'image' && (
           <>
-            {!block.file ? (
+            {!block.file && !block.fileUrl && !block.url ? (
               <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center">
                 <input
                   type="file"
@@ -295,29 +296,58 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
                 </label>
               </div>
             ) : (
-          <div className="space-y-3">
-              <div className="relative">
-                <img
-                    src={URL.createObjectURL(block.file)}
-                    alt="Block content"
+              <div className="space-y-3">
+                <div className="relative">
+                  <img
+                    src={
+                      block.file 
+                        ? URL.createObjectURL(block.file)
+                        : block.fileUrl || block.url || ''
+                    }
+                    alt={block.caption || "Block content"}
                     className="w-full h-48 object-cover rounded-lg"
-                />
-                <button
-                  type="button"
-                    onClick={() => onUpdate(block.id, { file: undefined })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onUpdate(block.id, { 
+                      file: undefined, 
+                      fileUrl: undefined, 
+                      url: undefined 
+                    })}
                     className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            <input
-              type="text"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                  {/* Replace image button */}
+                  <div className="absolute bottom-2 left-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      value=""
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) onUpdate(block.id, { file, fileUrl: undefined, url: undefined })
+                      }}
+                      className="hidden"
+                      id={`replace-image-${block.id}`}
+                    />
+                    <label
+                      htmlFor={`replace-image-${block.id}`}
+                      className="inline-flex items-center px-2 py-1 text-xs bg-white/90 text-slate-700 rounded border border-slate-300 hover:bg-white cursor-pointer"
+                    >
+                      <Upload className="w-3 h-3 mr-1" />
+                      Replace
+                    </label>
+                  </div>
+                </div>
+                <input
+                  type="text"
                   placeholder="Image caption (optional)"
-              value={block.caption || ''}
-              onChange={(e) => onUpdate(block.id, { caption: e.target.value })}
+                  value={block.caption || ''}
+                  onChange={(e) => onUpdate(block.id, { caption: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none text-sm"
-            />
-          </div>
+                />
+              </div>
             )}
           </>
         )}
