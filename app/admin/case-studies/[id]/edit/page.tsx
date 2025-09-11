@@ -80,6 +80,58 @@ const LAYOUT_TEMPLATES = {
   3: { columns: 3, icon: Grid3X3, label: '3 Columns' }
 }
 
+// Component Palette Item
+interface PaletteComponentProps {
+  type: 'text' | 'image' | 'video' | 'title'
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  description: string
+}
+
+const PaletteComponent: React.FC<PaletteComponentProps> = ({ type, label, icon: Icon, description }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: `palette-${type}` })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`group cursor-grab active:cursor-grabbing p-4 bg-white border-2 border-dashed border-slate-300 rounded-lg hover:border-[#0a4373] hover:bg-[#0a4373]/5 transition-all ${
+        isDragging ? 'shadow-lg' : ''
+      }`}
+    >
+      <div className="flex flex-col items-center text-center space-y-2">
+        <div className={`p-2 rounded-lg ${
+          type === 'title' ? 'bg-orange-100 text-orange-600' :
+          type === 'text' ? 'bg-blue-100 text-blue-600' :
+          type === 'image' ? 'bg-green-100 text-green-600' :
+          'bg-purple-100 text-purple-600'
+        }`}>
+          <Icon className="w-5 h-5" />
+        </div>
+        <div>
+          <h4 className="font-medium text-slate-900 group-hover:text-[#0a4373]">{label}</h4>
+          <p className="text-xs text-slate-500 mt-1">{description}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Draggable Block Component
 interface DraggableBlockProps {
   block: ContentBlock
@@ -405,14 +457,12 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
 // Droppable Column Component
 interface DroppableColumnProps {
   column: LayoutColumn
-  onAddBlock: (columnId: string, type: 'text' | 'image' | 'video' | 'title') => void
   onUpdateBlock: (id: string, updates: Partial<ContentBlock>) => void
   onDeleteBlock: (id: string) => void
 }
 
 const DroppableColumn: React.FC<DroppableColumnProps> = ({ 
   column, 
-  onAddBlock, 
   onUpdateBlock, 
   onDeleteBlock 
 }) => {
@@ -425,44 +475,10 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
         isOver ? 'border-[#0a4373] bg-[#0a4373]/5' : 'border-slate-300'
       }`}
     >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-slate-600">
+      <div className="flex items-center justify-center mb-4">
+        <h3 className="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
           Column {column.id.split('-')[1]}
         </h3>
-        <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={() => onAddBlock(column.id, 'title')}
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded hover:bg-orange-200 transition-colors"
-          >
-            <Type className="w-3 h-3" />
-            Title
-          </button>
-          <button
-            type="button"
-            onClick={() => onAddBlock(column.id, 'text')}
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
-          >
-            <FileText className="w-3 h-3" />
-            Text
-          </button>
-          <button
-            type="button"
-            onClick={() => onAddBlock(column.id, 'image')}
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-green-100 text-green-800 rounded hover:bg-green-200 transition-colors"
-          >
-            <ImageIcon className="w-3 h-3" />
-            Image
-          </button>
-          <button
-            type="button"
-            onClick={() => onAddBlock(column.id, 'video')}
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded hover:bg-purple-200 transition-colors"
-          >
-            <Video className="w-3 h-3" />
-            Video
-          </button>
-        </div>
       </div>
 
       <SortableContext items={column.blocks.map(block => block.id)} strategy={verticalListSortingStrategy}>
@@ -480,8 +496,9 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
 
       {column.blocks.length === 0 && (
         <div className="text-center py-12 text-slate-400">
-          <FileText className="mx-auto h-12 w-12 text-slate-300 mb-3" />
-          <p className="text-sm">Drop content blocks here or use the buttons above</p>
+          <GripVertical className="mx-auto h-12 w-12 text-slate-300 mb-3" />
+          <p className="text-sm">Drag components from the palette to add content</p>
+          <p className="text-xs text-slate-400 mt-1">Title, Text, Image, or Video</p>
         </div>
       )}
     </div>
@@ -848,7 +865,37 @@ export default function EditCaseStudy() {
     const activeId = active.id as string
     const overId = over.id as string
 
-    // Handle dropping into columns
+    // Handle dropping palette components into columns
+    if (activeId.startsWith('palette-') && overId.startsWith('column-')) {
+      const componentType = activeId.replace('palette-', '') as 'text' | 'image' | 'video' | 'title'
+      const targetColumnId = overId
+      
+      const newBlock: ContentBlock = {
+        id: Date.now().toString(),
+        type: componentType,
+        content: componentType === 'text' || componentType === 'title' ? 'Click to edit...' : undefined,
+        file: undefined,
+        url: undefined,
+        fileUrl: undefined,
+        caption: undefined,
+        titleLevel: componentType === 'title' ? 1 : undefined,
+        padding: 16,
+        margin: 8,
+        columnId: targetColumnId
+      }
+      
+      setCurrentLayout(prev => ({
+        ...prev,
+        columns: prev.columns.map(col => 
+          col.id === targetColumnId 
+            ? { ...col, blocks: [...col.blocks, newBlock] }
+            : col
+        )
+      }))
+      return
+    }
+
+    // Handle dropping into columns (existing block movement)
     if (overId.startsWith('column-')) {
       const sourceColumnId = currentLayout.columns.find(col => 
         col.blocks.some(block => block.id === activeId)
@@ -1098,43 +1145,93 @@ export default function EditCaseStudy() {
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
             >
-              {/* Layout Grid */}
-              <div className={`grid gap-6 ${
-                currentLayout.type === 1 ? 'grid-cols-1' :
-                currentLayout.type === 2 ? 'grid-cols-2' : 'grid-cols-3'
-              }`}>
-                {currentLayout.columns.map((column) => (
-                  <DroppableColumn
-                    key={column.id}
-                    column={column}
-                    onAddBlock={addBlockToColumn}
-                    onUpdateBlock={updateBlock}
-                    onDeleteBlock={deleteBlock}
-                  />
-                ))}
+              {/* Component Palette and Layout Grid */}
+              <div className="grid grid-cols-12 gap-6">
+                {/* Component Palette */}
+                <div className="col-span-3">
+                  <div className="sticky top-6">
+                    <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                      <GripVertical className="w-4 h-4 text-slate-400" />
+                      Components
+                    </h3>
+                    <div className="space-y-3">
+                      <SortableContext items={['palette-title', 'palette-text', 'palette-image', 'palette-video']} strategy={verticalListSortingStrategy}>
+                        <PaletteComponent
+                          type="title"
+                          label="Title"
+                          icon={Type}
+                          description="Add headings and titles"
+                        />
+                        <PaletteComponent
+                          type="text"
+                          label="Text"
+                          icon={FileText}
+                          description="Rich text content"
+                        />
+                        <PaletteComponent
+                          type="image"
+                          label="Image"
+                          icon={ImageIcon}
+                          description="Upload and display images"
+                        />
+                        <PaletteComponent
+                          type="video"
+                          label="Video"
+                          icon={Video}
+                          description="Embed videos and media"
+                        />
+                      </SortableContext>
                     </div>
+                    
+                    <div className="mt-6 p-4 bg-slate-50 rounded-lg">
+                      <p className="text-xs text-slate-600">
+                        💡 <strong>Tip:</strong> Drag components from here into the columns to add content blocks.
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-                    {/* Drag Overlay */}
-                    <DragOverlay>
-                      {activeId ? (
-                        <div className="bg-white border border-slate-200 rounded-lg shadow-lg opacity-90">
-                          <div className="p-3 bg-slate-50 rounded-t-lg">
-                            <div className="flex items-center gap-2">
-                              <GripVertical className="w-4 h-4 text-slate-400" />
-                              <span className="text-sm font-medium text-slate-700">Content Block</span>
-                            </div>
-                          </div>
-                        </div>
-                      ) : null}
-                    </DragOverlay>
-                  </DndContext>
+                {/* Layout Columns */}
+                <div className="col-span-9">
+                  <div className={`grid gap-6 ${
+                    currentLayout.type === 1 ? 'grid-cols-1' :
+                    currentLayout.type === 2 ? 'grid-cols-2' : 'grid-cols-3'
+                  }`}>
+                    {currentLayout.columns.map((column) => (
+                      <DroppableColumn
+                        key={column.id}
+                        column={column}
+                        onUpdateBlock={updateBlock}
+                        onDeleteBlock={deleteBlock}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Drag Overlay */}
+              <DragOverlay>
+                {activeId ? (
+                  <div className="bg-white border border-slate-200 rounded-lg shadow-lg opacity-90">
+                    <div className="p-3 bg-slate-50 rounded-t-lg">
+                      <div className="flex items-center gap-2">
+                        <GripVertical className="w-4 h-4 text-slate-400" />
+                        <span className="text-sm font-medium text-slate-700">
+                          {activeId.startsWith('palette-') ? 'New Component' : 'Content Block'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
 
             {/* Empty State */}
             {currentLayout.columns.every(col => col.blocks.length === 0) && (
               <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center mt-6">
-                <FileText className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+                <GripVertical className="mx-auto h-12 w-12 text-slate-400 mb-4" />
                 <h4 className="text-lg font-semibold text-slate-700 mb-2">Start Building Your Content</h4>
-                <p className="text-slate-500">Use the buttons in each column to add titles, text, images, and videos</p>
+                <p className="text-slate-500">Drag components from the palette on the left into the columns to create your case study</p>
                 </div>
             )}
           </div>
