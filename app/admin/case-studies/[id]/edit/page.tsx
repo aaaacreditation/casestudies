@@ -841,7 +841,7 @@ export default function EditCaseStudy() {
     for (let i = 0; i < type; i++) {
       newColumns.push({
         id: `column-${i + 1}`,
-        blocks: i === 0 ? currentLayout.columns[0]?.blocks || [] : []
+        blocks: currentLayout.columns[i]?.blocks || []
       })
     }
     setCurrentLayout({
@@ -849,6 +849,42 @@ export default function EditCaseStudy() {
       type,
       columns: newColumns
     })
+  }
+
+  const addColumn = () => {
+    const newColumnId = `column-${currentLayout.columns.length + 1}`
+    const newColumn: LayoutColumn = {
+      id: newColumnId,
+      blocks: []
+    }
+    setCurrentLayout(prev => ({
+      ...prev,
+      columns: [...prev.columns, newColumn]
+    }))
+  }
+
+  const removeColumn = () => {
+    if (currentLayout.columns.length > 1) {
+      const lastColumn = currentLayout.columns[currentLayout.columns.length - 1]
+      // Move blocks from the last column to the first column
+      if (lastColumn.blocks.length > 0) {
+        setCurrentLayout(prev => ({
+          ...prev,
+          columns: [
+            {
+              ...prev.columns[0],
+              blocks: [...prev.columns[0].blocks, ...lastColumn.blocks]
+            },
+            ...prev.columns.slice(1, -1)
+          ]
+        }))
+      } else {
+        setCurrentLayout(prev => ({
+          ...prev,
+          columns: prev.columns.slice(0, -1)
+        }))
+      }
+    }
   }
 
   // Drag and Drop Handlers
@@ -1117,27 +1153,51 @@ export default function EditCaseStudy() {
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-slate-900">Content Builder</h2>
-                        <div className="flex items-center gap-2">
-                          {Object.entries(LAYOUT_TEMPLATES).map(([key, template]) => {
-                            const Icon = template.icon
-                            return (
-                              <button
-                                key={key}
-                                type="button"
-                                onClick={() => changeLayout(parseInt(key) as 1 | 2 | 3)}
-                                className={`p-2 rounded-lg transition-colors ${
-                                  currentLayout.type === parseInt(key)
-                                    ? 'bg-[#0a4373] text-white'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                }`}
-                                title={template.label}
-                              >
-                                <Icon className="w-4 h-4" />
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-600">Columns:</span>
+                  {Object.entries(LAYOUT_TEMPLATES).map(([key, template]) => {
+                    const Icon = template.icon
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => changeLayout(parseInt(key) as 1 | 2 | 3)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          currentLayout.type === parseInt(key)
+                            ? 'bg-[#0a4373] text-white'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                        title={template.label}
+                      >
+                        <Icon className="w-4 h-4" />
+                      </button>
+                    )
+                  })}
+                </div>
+                <div className="h-4 w-px bg-slate-300"></div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => addColumn()}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm"
+                  >
+                    <Square className="w-4 h-4" />
+                    Add Column
+                  </button>
+                  {currentLayout.columns.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeColumn()}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm"
+                    >
+                      <X className="w-4 h-4" />
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
 
             <DndContext
               sensors={sensors}
@@ -1193,10 +1253,12 @@ export default function EditCaseStudy() {
 
                 {/* Layout Columns */}
                 <div className="col-span-9">
-                  <div className={`grid gap-6 ${
-                    currentLayout.type === 1 ? 'grid-cols-1' :
-                    currentLayout.type === 2 ? 'grid-cols-2' : 'grid-cols-3'
-                  }`}>
+                  <div 
+                    className="grid gap-6" 
+                    style={{ 
+                      gridTemplateColumns: `repeat(${currentLayout.columns.length}, 1fr)` 
+                    }}
+                  >
                     {currentLayout.columns.map((column) => (
                       <DroppableColumn
                         key={column.id}
