@@ -30,29 +30,42 @@ interface ContentBlock {
   id: string
   type: 'text' | 'image' | 'video' | 'title'
   content?: string
+  file?: File
   url?: string
-  fileUrl?: string
+  fileUrl?: string // For existing uploaded images
   caption?: string
-  titleLevel?: 1 | 2 | 3 | 4 | 5 | 6
+  columnId?: string
+  titleLevel?: 1 | 2 | 3 | 4 | 5 | 6 // For title blocks
   padding?: number // Padding in pixels
   margin?: number // Margin in pixels
 }
 
-// Layout Types
+// Page Builder Types
 interface LayoutColumn {
   id: string
   blocks: ContentBlock[]
+  width?: number // percentage width (e.g., 50 for 50%)
 }
 
-interface Layout {
+interface Section {
   id: string
-  type: 1 | 2 | 3
   columns: LayoutColumn[]
+}
+
+interface PageLayout {
+  id: string
+  type?: number
+  sections?: Section[]
+  columns?: LayoutColumn[]
 }
 
 // Component to render content blocks
 function ContentBlocks({ content }: { content: string }) {
-  let structuredContent: { layout?: Layout; availableBlocks?: ContentBlock[] } = {}
+  let structuredContent: { 
+    pageLayout?: PageLayout; 
+    layout?: PageLayout; 
+    availableBlocks?: ContentBlock[] 
+  } = {}
   
   try {
     structuredContent = JSON.parse(content || '{}')
@@ -86,59 +99,132 @@ function ContentBlocks({ content }: { content: string }) {
     )
   }
 
-  const { layout, availableBlocks } = structuredContent
+  // Get layout from either pageLayout (new structure) or layout (legacy)
+  const pageLayout = structuredContent.pageLayout || structuredContent.layout
+  const { availableBlocks } = structuredContent
 
-  if (!layout || layout.columns.every(col => col.blocks.length === 0)) {
-    // Check if there are available blocks but no layout - show them without warning for public view
-    if (availableBlocks && availableBlocks.length > 0) {
-      return (
-        <div className="space-y-6">
-          {availableBlocks.map((block, index) => (
-            <ContentBlockRenderer key={block.id} block={block} index={index} />
-          ))}
-        </div>
-      )
-    }
-    
-    // Only show "no content" if there's truly no content at all
-    return null
-  }
-
-  return (
-    <>
-      {/* Render Layout - maintaining the same structure as editor but with clean display */}
-      <div className={`grid gap-8 ${
-        layout.type === 1 ? 'grid-cols-1' :
-        layout.type === 2 ? 'grid-cols-1 md:grid-cols-2' : 
-        'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-      }`}>
-        {layout.columns.map((column, columnIndex) => (
-          <div 
-            key={column.id} 
-            className="space-y-6"
-          >
-            {/* Render blocks in the same order as they appear in the editor */}
-            {column.blocks.map((block, blockIndex) => (
-              <ContentBlockRenderer 
-                key={block.id} 
-                block={block} 
-                index={columnIndex * 10 + blockIndex} 
-              />
-            ))}
+  // Handle new section-based structure
+  if (pageLayout?.sections && pageLayout.sections.length > 0) {
+    return (
+      <div className="space-y-12">
+        {pageLayout.sections.map((section, sectionIndex) => (
+          <div key={section.id} className="section">
+            <div 
+              className={`grid gap-8 ${
+                section.columns.length === 1 ? 'grid-cols-1' :
+                section.columns.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 
+                section.columns.length === 3 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' :
+                `grid-cols-1 md:grid-cols-${Math.min(section.columns.length, 4)}`
+              }`}
+              style={{
+                gridTemplateColumns: section.columns.length > 4 
+                  ? `repeat(${section.columns.length}, 1fr)` 
+                  : undefined
+              }}
+            >
+              {section.columns.map((column, columnIndex) => (
+                <div 
+                  key={column.id} 
+                  className="space-y-6"
+                  style={{ 
+                    width: column.width ? `${column.width}%` : undefined 
+                  }}
+                >
+                  {column.blocks.map((block, blockIndex) => (
+                    <ContentBlockRenderer 
+                      key={block.id} 
+                      block={block} 
+                      index={sectionIndex * 100 + columnIndex * 10 + blockIndex} 
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         ))}
+        
+        {/* Render Available Blocks (if any) */}
+        {availableBlocks && availableBlocks.length > 0 && (
+          <div className="mt-12 space-y-6">
+            {availableBlocks.map((block, index) => (
+              <ContentBlockRenderer key={block.id} block={block} index={index + 1000} />
+            ))}
+          </div>
+        )}
       </div>
+    )
+  }
+
+  // Handle legacy column-based structure
+  if (pageLayout?.columns && pageLayout.columns.length > 0) {
+    const hasContent = pageLayout.columns.some(col => col.blocks.length > 0)
+    
+    if (!hasContent) {
+      // Check if there are available blocks but no layout - show them without warning for public view
+      if (availableBlocks && availableBlocks.length > 0) {
+        return (
+          <div className="space-y-6">
+            {availableBlocks.map((block, index) => (
+              <ContentBlockRenderer key={block.id} block={block} index={index} />
+            ))}
+          </div>
+        )
+      }
       
-      {/* Render Available Blocks (if any) */}
-      {availableBlocks && availableBlocks.length > 0 && (
-        <div className="mt-12 space-y-6">
-          {availableBlocks.map((block, index) => (
-            <ContentBlockRenderer key={block.id} block={block} index={index + 100} />
+      // Only show "no content" if there's truly no content at all
+      return null
+    }
+
+    return (
+      <>
+        {/* Render Layout - maintaining the same structure as editor but with clean display */}
+        <div className={`grid gap-8 ${
+          pageLayout.type === 1 || pageLayout.columns.length === 1 ? 'grid-cols-1' :
+          pageLayout.type === 2 || pageLayout.columns.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 
+          'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+        }`}>
+          {pageLayout.columns.map((column, columnIndex) => (
+            <div 
+              key={column.id} 
+              className="space-y-6"
+            >
+              {/* Render blocks in the same order as they appear in the editor */}
+              {column.blocks.map((block, blockIndex) => (
+                <ContentBlockRenderer 
+                  key={block.id} 
+                  block={block} 
+                  index={columnIndex * 10 + blockIndex} 
+                />
+              ))}
+            </div>
           ))}
         </div>
-      )}
-    </>
-  )
+        
+        {/* Render Available Blocks (if any) */}
+        {availableBlocks && availableBlocks.length > 0 && (
+          <div className="mt-12 space-y-6">
+            {availableBlocks.map((block, index) => (
+              <ContentBlockRenderer key={block.id} block={block} index={index + 100} />
+            ))}
+          </div>
+        )}
+      </>
+    )
+  }
+
+  // Fallback: show available blocks if no layout structure
+  if (availableBlocks && availableBlocks.length > 0) {
+    return (
+      <div className="space-y-6">
+        {availableBlocks.map((block, index) => (
+          <ContentBlockRenderer key={block.id} block={block} index={index} />
+        ))}
+      </div>
+    )
+  }
+  
+  // No content at all
+  return null
 }
 
 // Component to render individual content blocks as clean article content

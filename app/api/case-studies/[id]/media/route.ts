@@ -106,8 +106,67 @@ export async function POST(
       try {
         const contentData = JSON.parse(caseStudy.content || '{}')
         
-        // Handle new layout format
-        if (contentData.layout) {
+        // Handle new pageLayout format with sections
+        if (contentData.pageLayout?.sections) {
+          const updatedPageLayout = {
+            ...contentData.pageLayout,
+            sections: contentData.pageLayout.sections.map((section: { id: string; columns: { id: string; blocks: { id: string; [key: string]: unknown }[] }[] }) => ({
+              ...section,
+              columns: section.columns.map((col: { id: string; blocks: { id: string; [key: string]: unknown }[] }) => ({
+                ...col,
+                blocks: col.blocks.map((block: { id: string; [key: string]: unknown }) => {
+                  if (contentBlockFiles[block.id]) {
+                    return { ...block, fileUrl: contentBlockFiles[block.id] }
+                  }
+                  return block
+                })
+              }))
+            }))
+          }
+          
+          // Update available blocks
+          const updatedAvailableBlocks = (contentData.availableBlocks || []).map((block: { id: string; [key: string]: unknown }) => {
+            if (contentBlockFiles[block.id]) {
+              return { ...block, fileUrl: contentBlockFiles[block.id] }
+            }
+            return block
+          })
+          
+          updateData.content = JSON.stringify({
+            pageLayout: updatedPageLayout,
+            availableBlocks: updatedAvailableBlocks
+          })
+        }
+        // Handle legacy pageLayout format with columns
+        else if (contentData.pageLayout?.columns) {
+          const updatedPageLayout = {
+            ...contentData.pageLayout,
+            columns: contentData.pageLayout.columns.map((col: { id: string; blocks: { id: string; [key: string]: unknown }[] }) => ({
+              ...col,
+              blocks: col.blocks.map((block: { id: string; [key: string]: unknown }) => {
+                if (contentBlockFiles[block.id]) {
+                  return { ...block, fileUrl: contentBlockFiles[block.id] }
+                }
+                return block
+              })
+            }))
+          }
+          
+          // Update available blocks
+          const updatedAvailableBlocks = (contentData.availableBlocks || []).map((block: { id: string; [key: string]: unknown }) => {
+            if (contentBlockFiles[block.id]) {
+              return { ...block, fileUrl: contentBlockFiles[block.id] }
+            }
+            return block
+          })
+          
+          updateData.content = JSON.stringify({
+            pageLayout: updatedPageLayout,
+            availableBlocks: updatedAvailableBlocks
+          })
+        }
+        // Handle old layout format
+        else if (contentData.layout) {
           // Update blocks in layout columns
           const updatedLayout = {
             ...contentData.layout,
