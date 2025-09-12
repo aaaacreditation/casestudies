@@ -632,6 +632,8 @@ export default function EditCaseStudy() {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [mediaType, setMediaType] = useState<MediaType>(MediaType.IMAGE_ONLY)
   const [featuredVideo, setFeaturedVideo] = useState<string>('')
+  const [featuredImage, setFeaturedImage] = useState<string>('')
+  const [featuredImageFile, setFeaturedImageFile] = useState<File | null>(null)
 
   // DnD Sensors
   const sensors = useSensors(
@@ -892,9 +894,11 @@ export default function EditCaseStudy() {
         // Set media data
         setMediaType(data.mediaType || MediaType.IMAGE_ONLY)
         setFeaturedVideo(data.featuredVideo || '')
+        setFeaturedImage(data.featuredImage || '')
         
         console.log('🎬 Media type set:', data.mediaType || MediaType.IMAGE_ONLY)
         console.log('🎥 Featured video:', data.featuredVideo || 'none')
+        console.log('🖼️ Featured image:', data.featuredImage || 'none')
 
       } else {
         console.error('❌ API Error - Case study not found, status:', response.status)
@@ -1252,6 +1256,32 @@ export default function EditCaseStudy() {
     }
   }
 
+  // Handle featured image upload
+  const handleFeaturedImageUpload = async (file: File) => {
+    try {
+      const formData = new FormData()
+      formData.append('featuredImage', file)
+      
+      const response = await fetch(`/api/case-studies/${params.id}/media`, {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        if (result.featuredImage) {
+          setFeaturedImage(result.featuredImage)
+          setFeaturedImageFile(null)
+          console.log('✅ Featured image uploaded successfully:', result.featuredImage)
+        }
+      } else {
+        console.error('❌ Failed to upload featured image')
+      }
+    } catch (error) {
+      console.error('❌ Error uploading featured image:', error)
+    }
+  }
+
   const handleSave = async () => {
     setSaving(true)
     try {
@@ -1438,6 +1468,114 @@ export default function EditCaseStudy() {
                       </div>
                   </div>
                 </div>
+
+          {/* Cover Image */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h2 className="text-xl font-semibold text-slate-900 mb-6">Cover Image</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Featured Image
+                </label>
+                <p className="text-sm text-slate-500 mb-4">
+                  Upload a high-quality image that will be displayed as the main visual for this case study.
+                </p>
+                
+                {!featuredImage && !featuredImageFile ? (
+                  // Upload new image
+                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-[#0a4373] transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          setFeaturedImageFile(file)
+                        }
+                      }}
+                      className="hidden"
+                      id="featured-image-upload"
+                    />
+                    <label
+                      htmlFor="featured-image-upload"
+                      className="cursor-pointer flex flex-col items-center"
+                    >
+                      <ImageIcon className="w-12 h-12 text-slate-400 mb-4" />
+                      <span className="text-lg font-medium text-slate-700 mb-2">
+                        Choose Cover Image
+                      </span>
+                      <span className="text-sm text-slate-500">
+                        PNG, JPG, GIF up to 10MB
+                      </span>
+                    </label>
+                  </div>
+                ) : (
+                  // Show current or selected image
+                  <div className="relative">
+                    <div className="relative w-full h-64 rounded-lg overflow-hidden bg-slate-100">
+                      <img
+                        src={
+                          featuredImageFile 
+                            ? URL.createObjectURL(featuredImageFile)
+                            : featuredImage
+                        }
+                        alt="Featured image"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all flex items-center justify-center opacity-0 hover:opacity-100">
+                        <div className="flex gap-2">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) {
+                                setFeaturedImageFile(file)
+                              }
+                            }}
+                            className="hidden"
+                            id="replace-featured-image"
+                          />
+                          <label
+                            htmlFor="replace-featured-image"
+                            className="px-3 py-1.5 bg-white text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 cursor-pointer flex items-center gap-1"
+                          >
+                            <Upload className="w-4 h-4" />
+                            Replace
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFeaturedImage('')
+                              setFeaturedImageFile(null)
+                            }}
+                            className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 flex items-center gap-1"
+                          >
+                            <X className="w-4 h-4" />
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Upload button for new file */}
+                    {featuredImageFile && (
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => handleFeaturedImageUpload(featuredImageFile)}
+                          className="px-4 py-2 bg-[#0a4373] text-white rounded-lg hover:bg-[#083455] transition-colors flex items-center gap-2"
+                        >
+                          <Upload className="w-4 h-4" />
+                          Upload Image
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* Content Builder */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
