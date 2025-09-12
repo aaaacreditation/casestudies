@@ -91,11 +91,11 @@ function ContentBlocks({ content }: { content: string }) {
   if (Array.isArray(structuredContent)) {
     const contentBlocks = structuredContent as ContentBlock[]
     return (
-      <>
+      <div className="space-y-3">
         {contentBlocks.map((block, index) => (
           <ContentBlockRenderer key={block.id} block={block} index={index} />
         ))}
-      </>
+      </div>
     )
   }
 
@@ -106,11 +106,11 @@ function ContentBlocks({ content }: { content: string }) {
   // Handle new section-based structure
   if (pageLayout?.sections && pageLayout.sections.length > 0) {
     return (
-      <div className="space-y-12">
+      <div className="space-y-6">
         {pageLayout.sections.map((section, sectionIndex) => (
           <div key={section.id} className="section">
             <div 
-              className={`grid gap-8 ${
+              className={`grid gap-6 ${
                 section.columns.length === 1 ? 'grid-cols-1' :
                 section.columns.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 
                 section.columns.length === 3 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' :
@@ -125,7 +125,7 @@ function ContentBlocks({ content }: { content: string }) {
               {section.columns.map((column, columnIndex) => (
                 <div 
                   key={column.id} 
-                  className="space-y-6"
+                  className="space-y-3"
                   style={{ 
                     width: column.width ? `${column.width}%` : undefined 
                   }}
@@ -145,7 +145,7 @@ function ContentBlocks({ content }: { content: string }) {
         
         {/* Render Available Blocks (if any) */}
         {availableBlocks && availableBlocks.length > 0 && (
-          <div className="mt-12 space-y-6">
+          <div className="mt-8 space-y-3">
             {availableBlocks.map((block, index) => (
               <ContentBlockRenderer key={block.id} block={block} index={index + 1000} />
             ))}
@@ -163,7 +163,7 @@ function ContentBlocks({ content }: { content: string }) {
       // Check if there are available blocks but no layout - show them without warning for public view
       if (availableBlocks && availableBlocks.length > 0) {
         return (
-          <div className="space-y-6">
+          <div className="space-y-3">
             {availableBlocks.map((block, index) => (
               <ContentBlockRenderer key={block.id} block={block} index={index} />
             ))}
@@ -178,7 +178,7 @@ function ContentBlocks({ content }: { content: string }) {
     return (
       <>
         {/* Render Layout - maintaining the same structure as editor but with clean display */}
-        <div className={`grid gap-8 ${
+        <div className={`grid gap-6 ${
           pageLayout.type === 1 || pageLayout.columns.length === 1 ? 'grid-cols-1' :
           pageLayout.type === 2 || pageLayout.columns.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 
           'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
@@ -186,7 +186,7 @@ function ContentBlocks({ content }: { content: string }) {
           {pageLayout.columns.map((column, columnIndex) => (
             <div 
               key={column.id} 
-              className="space-y-6"
+              className="space-y-3"
             >
               {/* Render blocks in the same order as they appear in the editor */}
               {column.blocks.map((block, blockIndex) => (
@@ -202,7 +202,7 @@ function ContentBlocks({ content }: { content: string }) {
         
         {/* Render Available Blocks (if any) */}
         {availableBlocks && availableBlocks.length > 0 && (
-          <div className="mt-12 space-y-6">
+          <div className="mt-8 space-y-3">
             {availableBlocks.map((block, index) => (
               <ContentBlockRenderer key={block.id} block={block} index={index + 100} />
             ))}
@@ -215,7 +215,7 @@ function ContentBlocks({ content }: { content: string }) {
   // Fallback: show available blocks if no layout structure
   if (availableBlocks && availableBlocks.length > 0) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-3">
         {availableBlocks.map((block, index) => (
           <ContentBlockRenderer key={block.id} block={block} index={index} />
         ))}
@@ -229,8 +229,11 @@ function ContentBlocks({ content }: { content: string }) {
 
 // Component to render individual content blocks as clean article content
 function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: number }) {
-  const customPadding = block.padding || 0
-  const customMargin = block.margin || 0
+  const customPadding = block.padding || 16
+  const customMargin = block.margin || 8
+  
+  // Use custom spacing if provided, otherwise use minimal default spacing
+  const hasCustomSpacing = (block.padding && block.padding !== 16) || (block.margin && block.margin !== 8)
   
   return (
     <motion.div
@@ -246,17 +249,17 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
     >
       {block.type === 'title' && block.content && (
         <>
-          {block.titleLevel === 1 && <h1 className="text-4xl font-bold text-slate-900 leading-tight mb-6">{block.content}</h1>}
-          {block.titleLevel === 2 && <h2 className="text-3xl font-semibold text-slate-900 leading-tight mb-5">{block.content}</h2>}
-          {block.titleLevel === 3 && <h3 className="text-2xl font-medium text-slate-900 leading-tight mb-4">{block.content}</h3>}
-          {block.titleLevel === 4 && <h4 className="text-xl font-medium text-slate-900 leading-tight mb-3">{block.content}</h4>}
-          {block.titleLevel === 5 && <h5 className="text-lg font-medium text-slate-900 leading-tight mb-3">{block.content}</h5>}
-          {block.titleLevel === 6 && <h6 className="text-base font-medium text-slate-900 leading-tight mb-2">{block.content}</h6>}
+          {block.titleLevel === 1 && <h1 className={`text-4xl font-bold text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-2'}`}>{block.content}</h1>}
+          {block.titleLevel === 2 && <h2 className={`text-3xl font-semibold text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-2'}`}>{block.content}</h2>}
+          {block.titleLevel === 3 && <h3 className={`text-2xl font-medium text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-2'}`}>{block.content}</h3>}
+          {block.titleLevel === 4 && <h4 className={`text-xl font-medium text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-1'}`}>{block.content}</h4>}
+          {block.titleLevel === 5 && <h5 className={`text-lg font-medium text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-1'}`}>{block.content}</h5>}
+          {block.titleLevel === 6 && <h6 className={`text-base font-medium text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-1'}`}>{block.content}</h6>}
         </>
       )}
 
       {block.type === 'text' && block.content && (
-        <div className="prose prose-lg max-w-none text-slate-700 leading-relaxed mb-6">
+        <div className={`prose prose-lg max-w-none text-slate-700 leading-relaxed ${hasCustomSpacing ? '' : 'mb-2'}`}>
           <MDEditor 
             source={block.content} 
             style={{ 
@@ -268,7 +271,7 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
       )}
       
       {block.type === 'image' && (block.fileUrl || block.url) && (
-        <div className="mb-8">
+        <div className={hasCustomSpacing ? '' : 'mb-4'}>
           <div className="relative w-full">
             <Image
               src={block.fileUrl || block.url || ''}
@@ -281,7 +284,7 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
             />
           </div>
           {block.caption && (
-            <div className="mt-3 text-sm text-slate-500 text-center italic">
+            <div className="mt-2 text-sm text-slate-500 text-center italic">
               {block.caption}
             </div>
           )}
@@ -289,7 +292,7 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
       )}
       
       {block.type === 'video' && (
-        <div className="mb-8">
+        <div className={hasCustomSpacing ? '' : 'mb-4'}>
           <div className="relative w-full aspect-video rounded-lg overflow-hidden shadow-lg bg-slate-100">
             {block.url && isYouTubeUrl(block.url) ? (
               <iframe
@@ -309,7 +312,7 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
             ) : null}
           </div>
           {block.caption && (
-            <div className="mt-3 text-sm text-slate-500 text-center italic">
+            <div className="mt-2 text-sm text-slate-500 text-center italic">
               {block.caption}
             </div>
           )}
