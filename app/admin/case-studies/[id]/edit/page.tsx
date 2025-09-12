@@ -681,18 +681,58 @@ export default function EditCaseStudy() {
           try {
             const parsedContent = JSON.parse(data.content)
             console.log('Parsed content structure:', parsedContent)
-            console.log('Layout exists:', !!parsedContent.layout)
+            console.log('PageLayout exists:', !!parsedContent.pageLayout)
+            console.log('Legacy Layout exists:', !!parsedContent.layout)
             console.log('Available blocks exists:', !!parsedContent.availableBlocks)
             
-            // Handle new format with layout structure
-            if (parsedContent.layout && parsedContent.layout.columns) {
-              console.log('🏗️ Loading layout with columns:', parsedContent.layout.columns.length)
-              console.log('🏗️ Layout structure:', parsedContent.layout)
+            // Handle new format with pageLayout structure (sections-based)
+            if (parsedContent.pageLayout && parsedContent.pageLayout.sections) {
+              console.log('🏗️ Loading pageLayout with sections:', parsedContent.pageLayout.sections.length)
+              console.log('🏗️ PageLayout structure:', parsedContent.pageLayout)
+              parsedContent.pageLayout.sections.forEach((section: Section, sectionIndex: number) => {
+                console.log(`🏗️ Section ${sectionIndex + 1} has ${section.columns?.length || 0} columns`)
+                section.columns.forEach((col: LayoutColumn, colIndex: number) => {
+                  console.log(`🏗️ Section ${sectionIndex + 1}, Column ${colIndex + 1} has ${col.blocks?.length || 0} blocks:`, col.blocks)
+                })
+              })
+              setPageLayout(parsedContent.pageLayout)
+              console.log('✅ PageLayout with sections set successfully')
+            }
+            // Handle new format with pageLayout structure (columns-based)
+            else if (parsedContent.pageLayout && parsedContent.pageLayout.columns) {
+              console.log('🏗️ Loading pageLayout with columns:', parsedContent.pageLayout.columns.length)
+              console.log('🏗️ PageLayout structure:', parsedContent.pageLayout)
+              parsedContent.pageLayout.columns.forEach((col: LayoutColumn, index: number) => {
+                console.log(`🏗️ Column ${index + 1} has ${col.blocks?.length || 0} blocks:`, col.blocks)
+              })
+              setPageLayout(parsedContent.pageLayout)
+              console.log('✅ PageLayout with columns set successfully')
+            }
+            // Handle legacy format with layout structure
+            else if (parsedContent.layout && parsedContent.layout.columns) {
+              console.log('🏗️ Loading legacy layout with columns:', parsedContent.layout.columns.length)
+              console.log('🏗️ Legacy layout structure:', parsedContent.layout)
               parsedContent.layout.columns.forEach((col: LayoutColumn, index: number) => {
                 console.log(`🏗️ Column ${index + 1} has ${col.blocks?.length || 0} blocks:`, col.blocks)
               })
-              setPageLayout(parsedContent.layout)
-              console.log('✅ Layout set successfully')
+              // Convert legacy layout to new pageLayout format
+              const convertedPageLayout: PageLayout = {
+                id: parsedContent.layout.id || 'layout-1',
+                type: parsedContent.layout.type || 1,
+                sections: [{
+                  id: 'section-1',
+                  columns: parsedContent.layout.columns.map((col: LayoutColumn) => ({
+                    ...col,
+                    blocks: col.blocks.map((block: ContentBlock) => ({
+                      ...block,
+                      padding: block.padding || 16,
+                      margin: block.margin || 8
+                    }))
+                  }))
+                }]
+              }
+              setPageLayout(convertedPageLayout)
+              console.log('✅ Legacy layout converted to pageLayout and set successfully')
             }
             // Handle legacy format - array of blocks
             else if (Array.isArray(parsedContent)) {
@@ -700,14 +740,16 @@ export default function EditCaseStudy() {
               console.log('🔄 Legacy blocks count:', parsedContent.length)
               const convertedLayout: PageLayout = {
                 id: 'layout-1',
-                type: 1 as const,
-                columns: [{
-                  id: 'column-1',
-                  blocks: parsedContent.map((block: ContentBlock) => ({
-                    ...block,
-                    padding: block.padding || 16,
-                    margin: block.margin || 8
-                  }))
+                sections: [{
+                  id: 'section-1',
+                  columns: [{
+                    id: 'column-1',
+                    blocks: parsedContent.map((block: ContentBlock) => ({
+                      ...block,
+                      padding: block.padding || 16,
+                      margin: block.margin || 8
+                    }))
+                  }]
                 }]
               }
               console.log('🔄 Converted layout:', convertedLayout)
@@ -719,26 +761,30 @@ export default function EditCaseStudy() {
               console.log('🔄 Converting layoutBlocks format to new layout structure')
               const layoutBlocksLayout: PageLayout = {
                 id: 'layout-1',
-                type: 1 as const,
-                columns: [{
-                  id: 'column-1',
-                  blocks: parsedContent.layoutBlocks.map((block: ContentBlock) => ({
-                    ...block,
-                    columnId: 'column-1',
-                    padding: block.padding || 16,
-                    margin: block.margin || 8
-                  }))
+                sections: [{
+                  id: 'section-1',
+                  columns: [{
+                    id: 'column-1',
+                    blocks: parsedContent.layoutBlocks.map((block: ContentBlock) => ({
+                      ...block,
+                      columnId: 'column-1',
+                      padding: block.padding || 16,
+                      margin: block.margin || 8
+                    }))
+                  }]
                 }]
               }
               setPageLayout(layoutBlocksLayout)
-              console.log('✅ Converted', parsedContent.layoutBlocks.length, 'layoutBlocks to layout columns')
+              console.log('✅ Converted', parsedContent.layoutBlocks.length, 'layoutBlocks to layout sections')
             }
             else {
               console.log('No recognizable content structure, using default layout')
               const noContentLayout: PageLayout = {
                 id: 'layout-1',
-                type: 1 as const,
-                columns: [{ id: 'column-1', blocks: [] }]
+                sections: [{
+                  id: 'section-1',
+                  columns: [{ id: 'column-1', blocks: [] }]
+                }]
               }
               setPageLayout(noContentLayout)
             }
@@ -758,35 +804,46 @@ export default function EditCaseStudy() {
               allContentBlocks.push(...parsedContent.layoutBlocks)
             }
             
-            // If we have content blocks but empty layout columns, move them to first column for editing
+            // If we have content blocks but empty layout, move them to first section for editing
             if (allContentBlocks.length > 0) {
               let shouldMoveToLayout = false
+              let totalBlocksInLayout = 0
               
-              if (parsedContent.layout && parsedContent.layout.columns) {
-                const totalBlocksInColumns = parsedContent.layout.columns.reduce((total: number, col: LayoutColumn) => total + (col.blocks?.length || 0), 0)
-                shouldMoveToLayout = totalBlocksInColumns === 0
+              // Check pageLayout structure
+              if (parsedContent.pageLayout?.sections) {
+                totalBlocksInLayout = parsedContent.pageLayout.sections.reduce((total: number, section: Section) => 
+                  total + section.columns.reduce((colTotal: number, col: LayoutColumn) => colTotal + (col.blocks?.length || 0), 0), 0)
+                shouldMoveToLayout = totalBlocksInLayout === 0
+              } else if (parsedContent.pageLayout?.columns) {
+                totalBlocksInLayout = parsedContent.pageLayout.columns.reduce((total: number, col: LayoutColumn) => total + (col.blocks?.length || 0), 0)
+                shouldMoveToLayout = totalBlocksInLayout === 0
+              } else if (parsedContent.layout?.columns) {
+                totalBlocksInLayout = parsedContent.layout.columns.reduce((total: number, col: LayoutColumn) => total + (col.blocks?.length || 0), 0)
+                shouldMoveToLayout = totalBlocksInLayout === 0
               } else {
                 shouldMoveToLayout = true
               }
               
               if (shouldMoveToLayout) {
-                console.log('🔄 Moving', allContentBlocks.length, 'content blocks to first column for editing')
-                const updatedLayout = {
+                console.log('🔄 Moving', allContentBlocks.length, 'content blocks to first section for editing')
+                const updatedLayout: PageLayout = {
                   id: 'layout-1',
-                  type: 1 as const,
-                  columns: [{
-                    id: 'column-1',
-                    blocks: allContentBlocks.map((block: ContentBlock) => ({ 
-                      ...block, 
-                      columnId: 'column-1',
-                      padding: block.padding || 16,
-                      margin: block.margin || 8
-                    }))
+                  sections: [{
+                    id: 'section-1',
+                    columns: [{
+                      id: 'column-1',
+                      blocks: allContentBlocks.map((block: ContentBlock) => ({ 
+                        ...block, 
+                        columnId: 'column-1',
+                        padding: block.padding || 16,
+                        margin: block.margin || 8
+                      }))
+                    }]
                   }]
                 }
                 setPageLayout(updatedLayout)
                 setAvailableBlocks([]) // Clear availableBlocks since they're now in layout
-                console.log('✅ Successfully moved all content blocks to layout columns')
+                console.log('✅ Successfully moved all content blocks to pageLayout sections')
               } else {
                 setAvailableBlocks(allContentBlocks)
               }
@@ -800,15 +857,17 @@ export default function EditCaseStudy() {
             // Try to handle as legacy plain text content
             const legacyTextLayout: PageLayout = {
               id: 'layout-1',
-              type: 1 as const,
-              columns: [{
-                id: 'column-1',
-                blocks: [{
-                  id: 'legacy-text-1',
-                  type: 'text',
-                  content: data.content,
-                  padding: 16,
-                  margin: 8
+              sections: [{
+                id: 'section-1',
+                columns: [{
+                  id: 'column-1',
+                  blocks: [{
+                    id: 'legacy-text-1',
+                    type: 'text',
+                    content: data.content,
+                    padding: 16,
+                    margin: 8
+                  }]
                 }]
               }]
             }
@@ -819,8 +878,10 @@ export default function EditCaseStudy() {
           console.log('❌ No content found in database, initializing with default layout')
           const defaultLayout: PageLayout = {
             id: 'layout-1',
-            type: 1 as const,
-            columns: [{ id: 'column-1', blocks: [] }]
+            sections: [{
+              id: 'section-1',
+              columns: [{ id: 'column-1', blocks: [] }]
+            }]
           }
           console.log('🔧 Setting default layout:', defaultLayout)
           setPageLayout(defaultLayout)
