@@ -21,7 +21,7 @@ model Company {
   website     String?
   industry    String
   location    String
-  size        String   // e.g., "1,000+", "100-499"
+  scope       String   // e.g., "National", "International", "Regional"
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

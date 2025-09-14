@@ -1673,7 +1673,7 @@ export namespace Prisma {
     website: string | null
     industry: string | null
     location: string | null
-    size: string | null
+    scope: string | null
     description: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -1686,7 +1686,7 @@ export namespace Prisma {
     website: string | null
     industry: string | null
     location: string | null
-    size: string | null
+    scope: string | null
     description: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -1699,7 +1699,7 @@ export namespace Prisma {
     website: number
     industry: number
     location: number
-    size: number
+    scope: number
     description: number
     createdAt: number
     updatedAt: number
@@ -1714,7 +1714,7 @@ export namespace Prisma {
     website?: true
     industry?: true
     location?: true
-    size?: true
+    scope?: true
     description?: true
     createdAt?: true
     updatedAt?: true
@@ -1727,7 +1727,7 @@ export namespace Prisma {
     website?: true
     industry?: true
     location?: true
-    size?: true
+    scope?: true
     description?: true
     createdAt?: true
     updatedAt?: true
@@ -1740,7 +1740,7 @@ export namespace Prisma {
     website?: true
     industry?: true
     location?: true
-    size?: true
+    scope?: true
     description?: true
     createdAt?: true
     updatedAt?: true
@@ -1826,7 +1826,7 @@ export namespace Prisma {
     website: string | null
     industry: string
     location: string
-    size: string
+    scope: string
     description: string | null
     createdAt: Date
     updatedAt: Date
@@ -1856,7 +1856,7 @@ export namespace Prisma {
     website?: boolean
     industry?: boolean
     location?: boolean
-    size?: boolean
+    scope?: boolean
     description?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -1872,7 +1872,7 @@ export namespace Prisma {
     website?: boolean
     industry?: boolean
     location?: boolean
-    size?: boolean
+    scope?: boolean
     description?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -1885,7 +1885,7 @@ export namespace Prisma {
     website?: boolean
     industry?: boolean
     location?: boolean
-    size?: boolean
+    scope?: boolean
     description?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -1898,13 +1898,13 @@ export namespace Prisma {
     website?: boolean
     industry?: boolean
     location?: boolean
-    size?: boolean
+    scope?: boolean
     description?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type CompanyOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "logo" | "website" | "industry" | "location" | "size" | "description" | "createdAt" | "updatedAt", ExtArgs["result"]["company"]>
+  export type CompanyOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "logo" | "website" | "industry" | "location" | "scope" | "description" | "createdAt" | "updatedAt", ExtArgs["result"]["company"]>
   export type CompanyInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     caseStudies?: boolean | Company$caseStudiesArgs<ExtArgs>
     testimonials?: boolean | Company$testimonialsArgs<ExtArgs>
@@ -1926,7 +1926,7 @@ export namespace Prisma {
       website: string | null
       industry: string
       location: string
-      size: string
+      scope: string
       description: string | null
       createdAt: Date
       updatedAt: Date
@@ -2361,7 +2361,7 @@ export namespace Prisma {
     readonly website: FieldRef<"Company", 'String'>
     readonly industry: FieldRef<"Company", 'String'>
     readonly location: FieldRef<"Company", 'String'>
-    readonly size: FieldRef<"Company", 'String'>
+    readonly scope: FieldRef<"Company", 'String'>
     readonly description: FieldRef<"Company", 'String'>
     readonly createdAt: FieldRef<"Company", 'DateTime'>
     readonly updatedAt: FieldRef<"Company", 'DateTime'>
@@ -10766,7 +10766,7 @@ export namespace Prisma {
     website: 'website',
     industry: 'industry',
     location: 'location',
-    size: 'size',
+    scope: 'scope',
     description: 'description',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -11030,7 +11030,7 @@ export namespace Prisma {
     website?: StringNullableFilter<"Company"> | string | null
     industry?: StringFilter<"Company"> | string
     location?: StringFilter<"Company"> | string
-    size?: StringFilter<"Company"> | string
+    scope?: StringFilter<"Company"> | string
     description?: StringNullableFilter<"Company"> | string | null
     createdAt?: DateTimeFilter<"Company"> | Date | string
     updatedAt?: DateTimeFilter<"Company"> | Date | string
@@ -11045,7 +11045,7 @@ export namespace Prisma {
     website?: SortOrderInput | SortOrder
     industry?: SortOrder
     location?: SortOrder
-    size?: SortOrder
+    scope?: SortOrder
     description?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -11063,7 +11063,7 @@ export namespace Prisma {
     website?: StringNullableFilter<"Company"> | string | null
     industry?: StringFilter<"Company"> | string
     location?: StringFilter<"Company"> | string
-    size?: StringFilter<"Company"> | string
+    scope?: StringFilter<"Company"> | string
     description?: StringNullableFilter<"Company"> | string | null
     createdAt?: DateTimeFilter<"Company"> | Date | string
     updatedAt?: DateTimeFilter<"Company"> | Date | string
@@ -11078,7 +11078,7 @@ export namespace Prisma {
     website?: SortOrderInput | SortOrder
     industry?: SortOrder
     location?: SortOrder
-    size?: SortOrder
+    scope?: SortOrder
     description?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -11097,7 +11097,7 @@ export namespace Prisma {
     website?: StringNullableWithAggregatesFilter<"Company"> | string | null
     industry?: StringWithAggregatesFilter<"Company"> | string
     location?: StringWithAggregatesFilter<"Company"> | string
-    size?: StringWithAggregatesFilter<"Company"> | string
+    scope?: StringWithAggregatesFilter<"Company"> | string
     description?: StringNullableWithAggregatesFilter<"Company"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Company"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Company"> | Date | string
@@ -11652,7 +11652,7 @@ export namespace Prisma {
     website?: string | null
     industry: string
     location: string
-    size: string
+    scope: string
     description?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -11667,7 +11667,7 @@ export namespace Prisma {
     website?: string | null
     industry: string
     location: string
-    size: string
+    scope: string
     description?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -11682,7 +11682,7 @@ export namespace Prisma {
     website?: NullableStringFieldUpdateOperationsInput | string | null
     industry?: StringFieldUpdateOperationsInput | string
     location?: StringFieldUpdateOperationsInput | string
-    size?: StringFieldUpdateOperationsInput | string
+    scope?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -11697,7 +11697,7 @@ export namespace Prisma {
     website?: NullableStringFieldUpdateOperationsInput | string | null
     industry?: StringFieldUpdateOperationsInput | string
     location?: StringFieldUpdateOperationsInput | string
-    size?: StringFieldUpdateOperationsInput | string
+    scope?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -11712,7 +11712,7 @@ export namespace Prisma {
     website?: string | null
     industry: string
     location: string
-    size: string
+    scope: string
     description?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -11725,7 +11725,7 @@ export namespace Prisma {
     website?: NullableStringFieldUpdateOperationsInput | string | null
     industry?: StringFieldUpdateOperationsInput | string
     location?: StringFieldUpdateOperationsInput | string
-    size?: StringFieldUpdateOperationsInput | string
+    scope?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -11738,7 +11738,7 @@ export namespace Prisma {
     website?: NullableStringFieldUpdateOperationsInput | string | null
     industry?: StringFieldUpdateOperationsInput | string
     location?: StringFieldUpdateOperationsInput | string
-    size?: StringFieldUpdateOperationsInput | string
+    scope?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -12415,7 +12415,7 @@ export namespace Prisma {
     website?: SortOrder
     industry?: SortOrder
     location?: SortOrder
-    size?: SortOrder
+    scope?: SortOrder
     description?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -12428,7 +12428,7 @@ export namespace Prisma {
     website?: SortOrder
     industry?: SortOrder
     location?: SortOrder
-    size?: SortOrder
+    scope?: SortOrder
     description?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -12441,7 +12441,7 @@ export namespace Prisma {
     website?: SortOrder
     industry?: SortOrder
     location?: SortOrder
-    size?: SortOrder
+    scope?: SortOrder
     description?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -13725,7 +13725,7 @@ export namespace Prisma {
     website?: string | null
     industry: string
     location: string
-    size: string
+    scope: string
     description?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -13739,7 +13739,7 @@ export namespace Prisma {
     website?: string | null
     industry: string
     location: string
-    size: string
+    scope: string
     description?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -13833,7 +13833,7 @@ export namespace Prisma {
     website?: NullableStringFieldUpdateOperationsInput | string | null
     industry?: StringFieldUpdateOperationsInput | string
     location?: StringFieldUpdateOperationsInput | string
-    size?: StringFieldUpdateOperationsInput | string
+    scope?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -13847,7 +13847,7 @@ export namespace Prisma {
     website?: NullableStringFieldUpdateOperationsInput | string | null
     industry?: StringFieldUpdateOperationsInput | string
     location?: StringFieldUpdateOperationsInput | string
-    size?: StringFieldUpdateOperationsInput | string
+    scope?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14007,7 +14007,7 @@ export namespace Prisma {
     website?: string | null
     industry: string
     location: string
-    size: string
+    scope: string
     description?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -14021,7 +14021,7 @@ export namespace Prisma {
     website?: string | null
     industry: string
     location: string
-    size: string
+    scope: string
     description?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -14098,7 +14098,7 @@ export namespace Prisma {
     website?: NullableStringFieldUpdateOperationsInput | string | null
     industry?: StringFieldUpdateOperationsInput | string
     location?: StringFieldUpdateOperationsInput | string
-    size?: StringFieldUpdateOperationsInput | string
+    scope?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -14112,7 +14112,7 @@ export namespace Prisma {
     website?: NullableStringFieldUpdateOperationsInput | string | null
     industry?: StringFieldUpdateOperationsInput | string
     location?: StringFieldUpdateOperationsInput | string
-    size?: StringFieldUpdateOperationsInput | string
+    scope?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string

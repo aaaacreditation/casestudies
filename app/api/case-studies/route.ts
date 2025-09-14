@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       companyName,
       companyIndustry,
       companyLocation,
-      companySize,
+      companyScope,
       companyWebsite,
       companyDescription,
       tags,
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
           logo: '', // Will be updated via media upload
           industry: companyIndustry,
           location: companyLocation,
-          size: companySize,
+          scope: companyScope,
           website: companyWebsite,
           description: companyDescription
         }

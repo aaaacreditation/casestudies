@@ -386,7 +386,7 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                       </div>
                       <div className="flex items-center gap-1">
                         <Users className="w-4 h-4" />
-                        {caseStudy.company.size} employees
+                        {caseStudy.company.scope}
                       </div>
                     </div>
                   </div>
@@ -551,8 +551,8 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                       <div className="text-slate-900">{caseStudy.company.location}</div>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-slate-600 mb-1">Company Size</div>
-                      <div className="text-slate-900">{caseStudy.company.size} employees</div>
+                      <div className="text-sm font-medium text-slate-600 mb-1">Scope</div>
+                      <div className="text-slate-900">{caseStudy.company.scope}</div>
                     </div>
                     {caseStudy.company.website && (
                       <div>

@@ -615,7 +615,7 @@ export default function EditCaseStudy() {
     companyName: '',
     companyIndustry: '',
     companyLocation: '',
-    companySize: '',
+    companyScope: '',
     companyWebsite: '',
     companyDescription: ''
   })
@@ -666,7 +666,7 @@ export default function EditCaseStudy() {
           companyName: data.company?.name || '',
           companyIndustry: data.company?.industry || '',
           companyLocation: data.company?.location || '',
-          companySize: data.company?.size || '',
+          companyScope: data.company?.scope || '',
           companyWebsite: data.company?.website || '',
           companyDescription: data.company?.description || ''
         })
@@ -1475,7 +1475,7 @@ export default function EditCaseStudy() {
             name: formData.companyName,
             industry: formData.companyIndustry,
             location: formData.companyLocation,
-            size: formData.companySize,
+            scope: formData.companyScope,
             website: formData.companyWebsite,
             description: formData.companyDescription
           }
@@ -1632,6 +1632,18 @@ export default function EditCaseStudy() {
                           value={formData.companyLocation}
                           onChange={handleInputChange}
                     placeholder="e.g., New York, USA"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Scope *</label>
+                        <input
+                          type="text"
+                          name="companyScope"
+                          value={formData.companyScope}
+                          onChange={handleInputChange}
+                          placeholder="e.g., National, International, Regional"
                           className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none"
                           required
                         />

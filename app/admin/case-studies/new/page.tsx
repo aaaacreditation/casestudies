@@ -612,7 +612,7 @@ export default function NewCaseStudy() {
     companyName: '',
     companyIndustry: '',
     companyLocation: '',
-    companySize: '',
+    companyScope: '',
     companyWebsite: '',
     companyDescription: ''
   })
@@ -924,7 +924,7 @@ export default function NewCaseStudy() {
           companyName: formData.companyName,
           companyIndustry: formData.companyIndustry,
           companyLocation: formData.companyLocation,
-          companySize: formData.companySize,
+          companyScope: formData.companyScope,
           companyWebsite: formData.companyWebsite,
           companyDescription: formData.companyDescription,
           published: false
@@ -1077,6 +1077,18 @@ export default function NewCaseStudy() {
                       value={formData.companyLocation}
                       onChange={handleInputChange}
                     placeholder="e.g., New York, USA"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Scope *</label>
+                    <input
+                      type="text"
+                      name="companyScope"
+                      value={formData.companyScope}
+                      onChange={handleInputChange}
+                      placeholder="e.g., National, International, Regional"
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none"
                       required
                     />
