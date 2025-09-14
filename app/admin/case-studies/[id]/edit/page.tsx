@@ -42,7 +42,8 @@ import {
   SortableContext,
   verticalListSortingStrategy,
   horizontalListSortingStrategy,
-  useSortable
+  useSortable,
+  arrayMove
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
@@ -1158,6 +1159,105 @@ export default function EditCaseStudy() {
     setActiveId(event.active.id as string)
   }
 
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event
+
+    if (!over) return
+
+    const activeId = active.id as string
+    const overId = over.id as string
+
+    // Don't do anything if we're dropping on the same item
+    if (activeId === overId) return
+
+    // Handle dropping palette components - don't interfere with over events
+    if (activeId.startsWith('palette-')) return
+
+    // Handle moving blocks between columns
+    if (!activeId.startsWith('section-') && !overId.startsWith('section-')) {
+      // Find the source column and block
+      let sourceColumnId: string | undefined
+      let sourceBlockIndex: number = -1
+      let blockToMove: ContentBlock | undefined
+
+      for (const section of pageLayout.sections || []) {
+        for (const column of section.columns) {
+          const blockIndex = column.blocks.findIndex(block => block.id === activeId)
+          if (blockIndex !== -1) {
+            sourceColumnId = column.id
+            sourceBlockIndex = blockIndex
+            blockToMove = column.blocks[blockIndex]
+            break
+          }
+        }
+        if (blockToMove) break
+      }
+
+      if (!sourceColumnId || !blockToMove) return
+
+      // Determine target column
+      let targetColumnId: string | undefined
+      let targetBlockIndex: number = -1
+
+      // If dropping on a column, add to end
+      if (overId.startsWith('column-')) {
+        targetColumnId = overId
+        // Find target column to get the length for end position
+        for (const section of pageLayout.sections || []) {
+          const targetColumn = section.columns.find(col => col.id === targetColumnId)
+          if (targetColumn) {
+            targetBlockIndex = targetColumn.blocks.length
+            break
+          }
+        }
+      } else {
+        // If dropping on a block, find its position
+        for (const section of pageLayout.sections || []) {
+          for (const column of section.columns) {
+            const blockIndex = column.blocks.findIndex(block => block.id === overId)
+            if (blockIndex !== -1) {
+              targetColumnId = column.id
+              targetBlockIndex = blockIndex
+              break
+            }
+          }
+          if (targetColumnId) break
+        }
+      }
+
+      if (!targetColumnId) return
+
+      // If moving within the same column, don't do anything in dragOver
+      if (sourceColumnId === targetColumnId) return
+
+      // Move block between different columns
+      if (sourceColumnId !== targetColumnId) {
+        setPageLayout(prev => ({
+          ...prev,
+          sections: prev.sections?.map(section => ({
+            ...section,
+            columns: section.columns.map(col => {
+              if (col.id === sourceColumnId) {
+                // Remove from source column
+                return { 
+                  ...col, 
+                  blocks: col.blocks.filter(block => block.id !== activeId) 
+                }
+              }
+              if (col.id === targetColumnId) {
+                // Add to target column
+                const newBlocks = [...col.blocks]
+                newBlocks.splice(targetBlockIndex, 0, { ...blockToMove!, columnId: targetColumnId })
+                return { ...col, blocks: newBlocks }
+              }
+              return col
+            })
+          }))
+        }))
+      }
+    }
+  }
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     setActiveId(null)
@@ -1168,35 +1268,53 @@ export default function EditCaseStudy() {
     const overId = over.id as string
 
     // Handle dropping palette components into columns
-    if (activeId.startsWith('palette-') && overId.startsWith('column-')) {
-      const componentType = activeId.replace('palette-', '') as 'text' | 'image' | 'video' | 'title'
-      const targetColumnId = overId
-      
-      const newBlock: ContentBlock = {
-        id: Date.now().toString(),
-        type: componentType,
-        content: componentType === 'text' || componentType === 'title' ? 'Click to edit...' : undefined,
-        file: undefined,
-        url: undefined,
-        fileUrl: undefined,
-        caption: undefined,
-        titleLevel: componentType === 'title' ? 1 : undefined,
-        padding: 16,
-        margin: 8,
-        columnId: targetColumnId
+    if (activeId.startsWith('palette-')) {
+      let targetColumnId: string | undefined
+
+      if (overId.startsWith('column-')) {
+        targetColumnId = overId
+      } else {
+        // If dropped on a block, find its column
+        for (const section of pageLayout.sections || []) {
+          for (const column of section.columns) {
+            if (column.blocks.some(block => block.id === overId)) {
+              targetColumnId = column.id
+              break
+            }
+          }
+          if (targetColumnId) break
+        }
       }
-      
-      setPageLayout(prev => ({
-        ...prev,
-        sections: prev.sections?.map(section => ({
-          ...section,
-          columns: section.columns.map(col => 
-            col.id === targetColumnId 
-              ? { ...col, blocks: [...col.blocks, newBlock] }
-              : col
-          )
+
+      if (targetColumnId) {
+        const componentType = activeId.replace('palette-', '') as 'text' | 'image' | 'video' | 'title'
+        
+        const newBlock: ContentBlock = {
+          id: Date.now().toString(),
+          type: componentType,
+          content: componentType === 'text' || componentType === 'title' ? 'Click to edit...' : undefined,
+          file: undefined,
+          url: undefined,
+          fileUrl: undefined,
+          caption: undefined,
+          titleLevel: componentType === 'title' ? 1 : undefined,
+          padding: 16,
+          margin: 8,
+          columnId: targetColumnId
+        }
+        
+        setPageLayout(prev => ({
+          ...prev,
+          sections: prev.sections?.map(section => ({
+            ...section,
+            columns: section.columns.map(col => 
+              col.id === targetColumnId 
+                ? { ...col, blocks: [...col.blocks, newBlock] }
+                : col
+            )
+          }))
         }))
-      }))
+      }
       return
     }
 
@@ -1205,48 +1323,72 @@ export default function EditCaseStudy() {
       const activeIndex = pageLayout.sections?.findIndex(section => section.id === activeId) ?? -1
       const overIndex = pageLayout.sections?.findIndex(section => section.id === overId) ?? -1
       
-      if (activeIndex !== overIndex) {
-        const newSections = [...(pageLayout.sections || [])]
-        const [removed] = newSections.splice(activeIndex, 1)
-        newSections.splice(overIndex, 0, removed)
-        
+      if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
         setPageLayout(prev => ({
           ...prev,
-          sections: newSections
+          sections: arrayMove(prev.sections || [], activeIndex, overIndex)
         }))
       }
       return
     }
 
-    // Handle dropping into columns (existing block movement)
+    // Handle block reordering within the same column
+    let sourceColumnId: string | undefined
+    let sourceBlockIndex: number = -1
+    let targetColumnId: string | undefined  
+    let targetBlockIndex: number = -1
+
+    // Find source position
+    for (const section of pageLayout.sections || []) {
+      for (const column of section.columns) {
+        const blockIndex = column.blocks.findIndex(block => block.id === activeId)
+        if (blockIndex !== -1) {
+          sourceColumnId = column.id
+          sourceBlockIndex = blockIndex
+          break
+        }
+      }
+      if (sourceColumnId) break
+    }
+
+    // Find target position
     if (overId.startsWith('column-')) {
-      // Find source column
-      let sourceColumnId: string | undefined
-      let blockToMove: ContentBlock | undefined
-      
+      targetColumnId = overId
+      // Add to end of column
+      for (const section of pageLayout.sections || []) {
+        const targetColumn = section.columns.find(col => col.id === targetColumnId)
+        if (targetColumn) {
+          targetBlockIndex = targetColumn.blocks.length
+          break
+        }
+      }
+    } else {
+      // Find target block position
       for (const section of pageLayout.sections || []) {
         for (const column of section.columns) {
-          const foundBlock = column.blocks.find(block => block.id === activeId)
-          if (foundBlock) {
-            sourceColumnId = column.id
-            blockToMove = foundBlock
+          const blockIndex = column.blocks.findIndex(block => block.id === overId)
+          if (blockIndex !== -1) {
+            targetColumnId = column.id
+            targetBlockIndex = blockIndex
             break
           }
         }
-        if (blockToMove) break
+        if (targetColumnId) break
       }
+    }
 
-      if (sourceColumnId && blockToMove && sourceColumnId !== overId) {
+    // If we have valid source and target positions
+    if (sourceColumnId && targetColumnId && sourceBlockIndex !== -1 && targetBlockIndex !== -1) {
+      // Handle reordering within the same column
+      if (sourceColumnId === targetColumnId && sourceBlockIndex !== targetBlockIndex) {
         setPageLayout(prev => ({
           ...prev,
           sections: prev.sections?.map(section => ({
             ...section,
             columns: section.columns.map(col => {
               if (col.id === sourceColumnId) {
-                return { ...col, blocks: col.blocks.filter(block => block.id !== activeId) }
-              }
-              if (col.id === overId) {
-                return { ...col, blocks: [...col.blocks, { ...blockToMove!, columnId: overId }] }
+                const newBlocks = arrayMove(col.blocks, sourceBlockIndex, targetBlockIndex)
+                return { ...col, blocks: newBlocks }
               }
               return col
             })
@@ -1597,6 +1739,7 @@ export default function EditCaseStudy() {
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
               onDragEnd={handleDragEnd}
             >
               {/* Component Palette and Page Builder */}
