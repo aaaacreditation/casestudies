@@ -1675,7 +1675,7 @@ export default function EditCaseStudy() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Excerpt *</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Case Study Description *</label>
                         <textarea
                           name="excerpt"
                           value={formData.excerpt}
@@ -1726,7 +1726,7 @@ export default function EditCaseStudy() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Scope *</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Title Scope *</label>
                         <input
                           type="text"
                           name="companyScope"

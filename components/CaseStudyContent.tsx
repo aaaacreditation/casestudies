@@ -551,7 +551,7 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                       <div className="text-slate-900">{caseStudy.company.location}</div>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-slate-600 mb-1">Scope</div>
+                      <div className="text-sm font-medium text-slate-600 mb-1">Title Scope</div>
                       <div className="text-slate-900">{caseStudy.company.scope}</div>
                     </div>
                     {caseStudy.company.website && (

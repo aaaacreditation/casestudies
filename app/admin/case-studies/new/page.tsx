@@ -1073,18 +1073,18 @@ export default function NewCaseStudy() {
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none"
                     />
                   </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Excerpt *</label>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Case Study Description *</label>
                     <textarea
                       name="excerpt"
                       value={formData.excerpt}
                       onChange={handleInputChange}
                       rows={3}
                       placeholder="Brief description for case study cards"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none resize-vertical"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0a4373]/20 focus:border-[#0a4373] outline-none resize-vertical"
                       required
-                            />
-                          </div>
+                    />
+                  </div>
                         </div>
 
               <div className="space-y-4">
@@ -1125,7 +1125,7 @@ export default function NewCaseStudy() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Scope *</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Title Scope *</label>
                     <input
                       type="text"
                       name="companyScope"

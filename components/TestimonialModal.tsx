@@ -120,7 +120,7 @@ export default function TestimonialModal({
                     <div className="flex items-center gap-4 text-sm text-gray-500">
                       <span>Industry: {testimonial.company.industry}</span>
                       <span>•</span>
-                      <span>Scope: {testimonial.company.scope}</span>
+                      <span>Title Scope: {testimonial.company.scope}</span>
                       <span>•</span>
                       <span>Location: {testimonial.company.location}</span>
                     </div>
