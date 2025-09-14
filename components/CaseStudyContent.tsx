@@ -110,7 +110,7 @@ function ContentBlocks({ content }: { content: string }) {
         {pageLayout.sections.map((section, sectionIndex) => (
           <div key={section.id} className="section">
             <div 
-              className={`grid gap-4 ${
+              className={`grid gap-3 ${
                 section.columns.length === 1 ? 'grid-cols-1' :
                 section.columns.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 
                 section.columns.length === 3 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' :
@@ -125,7 +125,7 @@ function ContentBlocks({ content }: { content: string }) {
               {section.columns.map((column, columnIndex) => (
                 <div 
                   key={column.id} 
-                  className="space-y-2"
+                  className="space-y-1"
                   style={{ 
                     width: column.width ? `${column.width}%` : undefined 
                   }}
@@ -178,7 +178,7 @@ function ContentBlocks({ content }: { content: string }) {
     return (
       <>
         {/* Render Layout - maintaining the same structure as editor but with clean display */}
-        <div className={`grid gap-4 ${
+        <div className={`grid gap-3 ${
           pageLayout.type === 1 || pageLayout.columns.length === 1 ? 'grid-cols-1' :
           pageLayout.type === 2 || pageLayout.columns.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 
           'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
@@ -278,7 +278,7 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
               alt={block.caption || 'Content image'}
               width={1200}
               height={800}
-              className="w-full h-auto object-contain rounded-lg shadow-lg"
+              className="w-full h-auto object-contain rounded-lg shadow-lg max-h-96"
               priority={false}
             />
           </div>
@@ -344,7 +344,7 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
       {/* Hero Section */}
       <section className="bg-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
             {/* Main Content */}
             <div className="lg:col-span-2">
@@ -507,7 +507,7 @@ export default function CaseStudyContent({ caseStudy }: CaseStudyContentProps) {
                 className="prose prose-lg max-w-none"
               >
                 {/* Dynamic Content Blocks */}
-                <div className="space-y-8 mb-8">
+                <div className="space-y-6 mb-8">
                   <ContentBlocks content={caseStudy.content} />
                 </div>
 
