@@ -106,11 +106,11 @@ function ContentBlocks({ content }: { content: string }) {
   // Handle new section-based structure
   if (pageLayout?.sections && pageLayout.sections.length > 0) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         {pageLayout.sections.map((section, sectionIndex) => (
           <div key={section.id} className="section">
             <div 
-              className={`grid gap-6 ${
+              className={`grid gap-4 ${
                 section.columns.length === 1 ? 'grid-cols-1' :
                 section.columns.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 
                 section.columns.length === 3 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' :
@@ -125,7 +125,7 @@ function ContentBlocks({ content }: { content: string }) {
               {section.columns.map((column, columnIndex) => (
                 <div 
                   key={column.id} 
-                  className="space-y-3"
+                  className="space-y-2"
                   style={{ 
                     width: column.width ? `${column.width}%` : undefined 
                   }}
@@ -178,7 +178,7 @@ function ContentBlocks({ content }: { content: string }) {
     return (
       <>
         {/* Render Layout - maintaining the same structure as editor but with clean display */}
-        <div className={`grid gap-6 ${
+        <div className={`grid gap-4 ${
           pageLayout.type === 1 || pageLayout.columns.length === 1 ? 'grid-cols-1' :
           pageLayout.type === 2 || pageLayout.columns.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 
           'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
@@ -278,8 +278,7 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
               alt={block.caption || 'Content image'}
               width={1200}
               height={800}
-              className="w-full h-auto object-cover rounded-lg shadow-lg"
-              style={{ maxHeight: '500px' }}
+              className="w-full h-auto object-contain rounded-lg shadow-lg"
               priority={false}
             />
           </div>
