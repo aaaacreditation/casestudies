@@ -125,7 +125,7 @@ function ContentBlocks({ content }: { content: string }) {
               {section.columns.map((column, columnIndex) => (
                 <div 
                   key={column.id} 
-                  className="space-y-1"
+                  className="w-full space-y-1"
                   style={{ 
                     width: column.width ? `${column.width}%` : undefined 
                   }}
@@ -186,7 +186,7 @@ function ContentBlocks({ content }: { content: string }) {
           {pageLayout.columns.map((column, columnIndex) => (
             <div 
               key={column.id} 
-              className="space-y-3"
+              className="w-full space-y-1"
             >
               {/* Render blocks in the same order as they appear in the editor */}
               {column.blocks.map((block, blockIndex) => (
@@ -240,6 +240,7 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: (index % 10) * 0.1 }}
+      className="w-full"
       style={{ 
         paddingTop: customPadding > 0 ? `${customPadding}px` : undefined, 
         paddingBottom: customPadding > 0 ? `${customPadding}px` : undefined,
@@ -249,17 +250,17 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
     >
       {block.type === 'title' && block.content && (
         <>
-          {block.titleLevel === 1 && <h1 className={`text-4xl font-bold text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-2'}`}>{block.content}</h1>}
-          {block.titleLevel === 2 && <h2 className={`text-3xl font-semibold text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-2'}`}>{block.content}</h2>}
-          {block.titleLevel === 3 && <h3 className={`text-2xl font-medium text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-2'}`}>{block.content}</h3>}
-          {block.titleLevel === 4 && <h4 className={`text-xl font-medium text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-1'}`}>{block.content}</h4>}
-          {block.titleLevel === 5 && <h5 className={`text-lg font-medium text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-1'}`}>{block.content}</h5>}
-          {block.titleLevel === 6 && <h6 className={`text-base font-medium text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-1'}`}>{block.content}</h6>}
+          {block.titleLevel === 1 && <h1 className={`w-full text-4xl font-bold text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-2'}`}>{block.content}</h1>}
+          {block.titleLevel === 2 && <h2 className={`w-full text-3xl font-semibold text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-2'}`}>{block.content}</h2>}
+          {block.titleLevel === 3 && <h3 className={`w-full text-2xl font-medium text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-2'}`}>{block.content}</h3>}
+          {block.titleLevel === 4 && <h4 className={`w-full text-xl font-medium text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-1'}`}>{block.content}</h4>}
+          {block.titleLevel === 5 && <h5 className={`w-full text-lg font-medium text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-1'}`}>{block.content}</h5>}
+          {block.titleLevel === 6 && <h6 className={`w-full text-base font-medium text-slate-900 leading-tight ${hasCustomSpacing ? '' : 'mb-1'}`}>{block.content}</h6>}
         </>
       )}
 
       {block.type === 'text' && block.content && (
-        <div className={`prose prose-lg max-w-none text-slate-700 leading-relaxed ${hasCustomSpacing ? '' : 'mb-2'}`}>
+        <div className={`w-full prose prose-lg max-w-none text-slate-700 leading-relaxed ${hasCustomSpacing ? '' : 'mb-2'}`}>
           <MDEditor 
             source={block.content} 
             style={{ 
@@ -271,7 +272,7 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
       )}
       
       {block.type === 'image' && (block.fileUrl || block.url) && (
-        <div className={hasCustomSpacing ? '' : 'mb-4'}>
+        <div className={`w-full ${hasCustomSpacing ? '' : 'mb-4'}`}>
           <div className="relative w-full">
             <Image
               src={block.fileUrl || block.url || ''}
@@ -291,7 +292,7 @@ function ContentBlockRenderer({ block, index }: { block: ContentBlock; index: nu
       )}
       
       {block.type === 'video' && (
-        <div className={hasCustomSpacing ? '' : 'mb-4'}>
+        <div className={`w-full ${hasCustomSpacing ? '' : 'mb-4'}`}>
           <div className="relative w-full aspect-video rounded-lg overflow-hidden shadow-lg bg-slate-100">
             {block.url && isYouTubeUrl(block.url) ? (
               <iframe
