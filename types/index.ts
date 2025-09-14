@@ -5,7 +5,7 @@ export interface Company {
   website?: string
   industry: string
   location: string
-  size: string
+  scope: string
   description?: string
   createdAt: Date
   updatedAt: Date

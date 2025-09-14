@@ -42,7 +42,7 @@ async function main() {
       website: 'https://atlassian.com',
       industry: 'Technology',
       location: 'Sydney, Australia',
-      size: '12,000+',
+      scope: 'International',
       description: 'Software development and collaboration tools company'
     }
   })
@@ -54,7 +54,7 @@ async function main() {
       website: 'https://breville.com',
       industry: 'Consumer goods',
       location: 'Sydney, Australia',
-      size: '1,000+',
+      scope: 'National',
       description: 'Kitchen appliances and coffee machines manufacturer'
     }
   })
@@ -66,7 +66,7 @@ async function main() {
       website: 'https://canva.com',
       industry: 'Technology',
       location: 'Sydney, Australia',
-      size: '4,500+',
+      scope: 'International',
       description: 'Online graphic design platform'
     }
   })
@@ -78,7 +78,7 @@ async function main() {
       website: 'https://safetyculture.com',
       industry: 'Technology',
       location: 'Sydney, Australia',
-      size: '600+',
+      scope: 'Regional',
       description: 'Workplace safety and quality solutions'
     }
   })
@@ -90,7 +90,7 @@ async function main() {
       website: 'https://zapier.com',
       industry: 'Technology',
       location: 'San Francisco, USA',
-      size: '1,000+',
+      scope: 'International',
       description: 'Automation platform that connects apps and services'
     }
   })
