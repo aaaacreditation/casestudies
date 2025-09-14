@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         website: 'https://atlassian.com',
         industry: 'Technology',
         location: 'Sydney, Australia',
-        size: '12,000+',
+        scope: 'International',
         description: 'Software development and collaboration tools company'
       }
     })
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         website: 'https://breville.com',
         industry: 'Consumer goods',
         location: 'Sydney, Australia',
-        size: '1,000+',
+        scope: 'National',
         description: 'Kitchen appliances and coffee machines manufacturer'
       }
     })
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         website: 'https://canva.com',
         industry: 'Technology',
         location: 'Sydney, Australia',
-        size: '4,500+',
+        scope: 'International',
         description: 'Online graphic design platform'
       }
     })
