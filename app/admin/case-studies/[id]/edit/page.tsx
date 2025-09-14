@@ -334,7 +334,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
 
         {block.type === 'image' && (
           <>
-            {!block.file && !block.fileUrl && !block.url ? (
+            {!(block.file && block.file instanceof File) && !block.fileUrl && !block.url ? (
               <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center">
                 <input
                   type="file"
@@ -360,7 +360,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
                 <div className="relative">
                   <img
                     src={
-                      block.file 
+                      (block.file && block.file instanceof File) 
                         ? URL.createObjectURL(block.file)
                         : block.fileUrl || block.url || ''
                     }
@@ -698,7 +698,23 @@ export default function EditCaseStudy() {
                   console.log(`🏗️ Section ${sectionIndex + 1}, Column ${colIndex + 1} has ${col.blocks?.length || 0} blocks:`, col.blocks)
                 })
               })
-              setPageLayout(parsedContent.pageLayout)
+              // Clean up empty file objects in blocks
+              const cleanedPageLayout = {
+                ...parsedContent.pageLayout,
+                sections: parsedContent.pageLayout.sections.map((section: Section) => ({
+                  ...section,
+                  columns: section.columns.map((col: LayoutColumn) => ({
+                    ...col,
+                    blocks: col.blocks.map((block: ContentBlock) => ({
+                      ...block,
+                      file: (block.file && typeof block.file === 'object' && Object.keys(block.file).length === 0) 
+                        ? undefined 
+                        : block.file
+                    }))
+                  }))
+                }))
+              }
+              setPageLayout(cleanedPageLayout)
               console.log('✅ PageLayout with sections set successfully')
             }
             // Handle new format with pageLayout structure (columns-based)
@@ -708,7 +724,20 @@ export default function EditCaseStudy() {
               parsedContent.pageLayout.columns.forEach((col: LayoutColumn, index: number) => {
                 console.log(`🏗️ Column ${index + 1} has ${col.blocks?.length || 0} blocks:`, col.blocks)
               })
-              setPageLayout(parsedContent.pageLayout)
+              // Clean up empty file objects in blocks
+              const cleanedPageLayout = {
+                ...parsedContent.pageLayout,
+                columns: parsedContent.pageLayout.columns.map((col: LayoutColumn) => ({
+                  ...col,
+                  blocks: col.blocks.map((block: ContentBlock) => ({
+                    ...block,
+                    file: (block.file && typeof block.file === 'object' && Object.keys(block.file).length === 0) 
+                      ? undefined 
+                      : block.file
+                  }))
+                }))
+              }
+              setPageLayout(cleanedPageLayout)
               console.log('✅ PageLayout with columns set successfully')
             }
             // Handle legacy format with layout structure
