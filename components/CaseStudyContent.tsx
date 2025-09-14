@@ -126,9 +126,6 @@ function ContentBlocks({ content }: { content: string }) {
                 <div 
                   key={column.id} 
                   className="w-full space-y-1"
-                  style={{ 
-                    width: column.width ? `${column.width}%` : undefined 
-                  }}
                 >
                   {column.blocks.map((block, blockIndex) => (
                     <ContentBlockRenderer 
