@@ -1456,6 +1456,91 @@ export default function EditCaseStudy() {
   const handleSave = async () => {
     setSaving(true)
     try {
+      // Step 1: Collect all content blocks with File objects that need to be uploaded
+      const blocksWithFiles: { blockId: string; file: File }[] = []
+      
+      // Check pageLayout sections for blocks with File objects
+      pageLayout.sections?.forEach(section => {
+        section.columns.forEach(column => {
+          column.blocks.forEach(block => {
+            if (block.type === 'image' && block.file && block.file instanceof File) {
+              blocksWithFiles.push({ blockId: block.id, file: block.file })
+            }
+          })
+        })
+      })
+      
+      // Check availableBlocks for File objects
+      availableBlocks.forEach(block => {
+        if (block.type === 'image' && block.file && block.file instanceof File) {
+          blocksWithFiles.push({ blockId: block.id, file: block.file })
+        }
+      })
+
+      // Step 2: Upload content block images if any exist
+      let uploadedFileUrls: { [blockId: string]: string } = {}
+      
+      if (blocksWithFiles.length > 0) {
+        console.log('📤 Uploading', blocksWithFiles.length, 'content block images...')
+        
+        const mediaFormData = new FormData()
+        
+        // Add each file with its block ID
+        blocksWithFiles.forEach((item, index) => {
+          mediaFormData.append(`contentBlock_${index}`, item.file)
+          mediaFormData.append(`contentBlockId_${index}`, item.blockId)
+        })
+        
+        // Upload files to media endpoint
+        const mediaResponse = await fetch(`/api/case-studies/${params.id}/media`, {
+          method: 'POST',
+          body: mediaFormData
+        })
+        
+        if (mediaResponse.ok) {
+          const mediaResult = await mediaResponse.json()
+          uploadedFileUrls = mediaResult.contentBlockFiles || {}
+          console.log('✅ Images uploaded successfully:', uploadedFileUrls)
+        } else {
+          console.error('❌ Failed to upload images')
+          throw new Error('Failed to upload images')
+        }
+      }
+
+      // Step 3: Update pageLayout and availableBlocks with uploaded file URLs
+      const updatedPageLayout = {
+        ...pageLayout,
+        sections: pageLayout.sections?.map(section => ({
+          ...section,
+          columns: section.columns.map(column => ({
+            ...column,
+            blocks: column.blocks.map(block => {
+              if (uploadedFileUrls[block.id]) {
+                // Replace File object with uploaded URL
+                return {
+                  ...block,
+                  fileUrl: uploadedFileUrls[block.id],
+                  file: undefined // Remove File object
+                }
+              }
+              return block
+            })
+          }))
+        }))
+      }
+      
+      const updatedAvailableBlocks = availableBlocks.map(block => {
+        if (uploadedFileUrls[block.id]) {
+          return {
+            ...block,
+            fileUrl: uploadedFileUrls[block.id],
+            file: undefined // Remove File object
+          }
+        }
+        return block
+      })
+
+      // Step 4: Save the case study with updated content
       const response = await fetch(`/api/case-studies/${params.id}`, {
         method: 'PUT',
         headers: {
@@ -1466,8 +1551,8 @@ export default function EditCaseStudy() {
           subtitle: formData.subtitle,
           excerpt: formData.excerpt,
           content: JSON.stringify({
-            pageLayout: pageLayout,
-            availableBlocks: availableBlocks
+            pageLayout: updatedPageLayout,
+            availableBlocks: updatedAvailableBlocks
           }),
           mediaType: mediaType,
           featuredVideo: featuredVideo,
@@ -1483,12 +1568,16 @@ export default function EditCaseStudy() {
       })
 
       if (response.ok) {
+        console.log('✅ Case study saved successfully')
         router.push('/admin/dashboard')
       } else {
-        console.error('Failed to update case study')
+        console.error('❌ Failed to update case study')
+        throw new Error('Failed to update case study')
       }
     } catch (error) {
-      console.error('Error updating case study:', error)
+      console.error('❌ Error saving case study:', error)
+      // Show user-friendly error message
+      alert('Failed to save case study. Please try again.')
     } finally {
       setSaving(false)
     }

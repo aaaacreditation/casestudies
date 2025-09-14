@@ -906,6 +906,7 @@ export default function NewCaseStudy() {
   const handleSave = async () => {
     setSaving(true)
     try {
+      // Step 1: Create the case study first
       const response = await fetch('/api/case-studies', {
         method: 'POST',
         headers: {
@@ -934,23 +935,65 @@ export default function NewCaseStudy() {
       if (response.ok) {
         const newCaseStudy = await response.json()
         
-        // If we have a featured image, upload it
-        if (featuredImageFile && newCaseStudy.id) {
-          const formData = new FormData()
-          formData.append('featuredImage', featuredImageFile)
-          
-          await fetch(`/api/case-studies/${newCaseStudy.id}/media`, {
-            method: 'POST',
-            body: formData
+        // Step 2: Collect all content blocks with File objects that need to be uploaded
+        const blocksWithFiles: { blockId: string; file: File }[] = []
+        
+        // Check pageLayout sections for blocks with File objects
+        pageLayout.sections?.forEach(section => {
+          section.columns.forEach(column => {
+            column.blocks.forEach(block => {
+              if (block.type === 'image' && block.file && block.file instanceof File) {
+                blocksWithFiles.push({ blockId: block.id, file: block.file })
+              }
+            })
           })
+        })
+        
+        // Check availableBlocks for File objects
+        availableBlocks.forEach(block => {
+          if (block.type === 'image' && block.file && block.file instanceof File) {
+            blocksWithFiles.push({ blockId: block.id, file: block.file })
+          }
+        })
+
+        // Step 3: Upload all media files (featured image + content block images)
+        if (featuredImageFile || blocksWithFiles.length > 0) {
+          console.log('📤 Uploading media files...')
+          
+          const mediaFormData = new FormData()
+          
+          // Add featured image if exists
+          if (featuredImageFile) {
+            mediaFormData.append('featuredImage', featuredImageFile)
+          }
+          
+          // Add content block images
+          blocksWithFiles.forEach((item, index) => {
+            mediaFormData.append(`contentBlock_${index}`, item.file)
+            mediaFormData.append(`contentBlockId_${index}`, item.blockId)
+          })
+          
+          const mediaResponse = await fetch(`/api/case-studies/${newCaseStudy.id}/media`, {
+            method: 'POST',
+            body: mediaFormData
+          })
+          
+          if (mediaResponse.ok) {
+            console.log('✅ Media files uploaded successfully')
+          } else {
+            console.error('❌ Failed to upload media files')
+          }
         }
 
         router.push('/admin/dashboard')
       } else {
-        console.error('Failed to create case study')
+        console.error('❌ Failed to create case study')
+        throw new Error('Failed to create case study')
       }
     } catch (error) {
-      console.error('Error creating case study:', error)
+      console.error('❌ Error creating case study:', error)
+      // Show user-friendly error message
+      alert('Failed to create case study. Please try again.')
     } finally {
       setSaving(false)
     }
