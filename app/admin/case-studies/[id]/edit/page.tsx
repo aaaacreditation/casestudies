@@ -26,6 +26,7 @@ import {
 import Link from 'next/link'
 import { MediaType } from '@/types'
 import RichTextEditor from '@/components/RichTextEditor'
+import ImageCropModal from '@/components/ImageCropModal'
 import {
   DndContext,
   DragEndEvent,
@@ -145,9 +146,10 @@ interface DraggableBlockProps {
   block: ContentBlock
   onUpdate: (id: string, updates: Partial<ContentBlock>) => void
   onDelete: (id: string) => void
+  onStartCrop?: (file: File, blockId: string) => void
 }
 
-const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDelete }) => {
+const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDelete, onStartCrop }) => {
   const {
     attributes,
     listeners,
@@ -342,7 +344,11 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
                   value=""
                   onChange={(e) => {
                     const file = e.target.files?.[0]
-                    if (file) onUpdate(block.id, { file })
+                    if (file && onStartCrop) {
+                      onStartCrop(file, block.id)
+                    } else if (file) {
+                      onUpdate(block.id, { file })
+                    }
                   }}
                   className="hidden"
                   id={`image-${block.id}`}
@@ -386,7 +392,11 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({ block, onUpdate, onDele
                       value=""
                       onChange={(e) => {
                         const file = e.target.files?.[0]
-                        if (file) onUpdate(block.id, { file, fileUrl: undefined, url: undefined })
+                        if (file && onStartCrop) {
+                          onStartCrop(file, block.id)
+                        } else if (file) {
+                          onUpdate(block.id, { file, fileUrl: undefined, url: undefined })
+                        }
                       }}
                       className="hidden"
                       id={`replace-image-${block.id}`}
@@ -470,6 +480,7 @@ interface DroppableSectionProps {
   onDeleteBlock: (id: string) => void
   onAddColumn: (sectionId: string) => void
   onRemoveColumn: (sectionId: string, columnId: string) => void
+  onStartCrop?: (file: File, blockId: string) => void
 }
 
 const DroppableSection: React.FC<DroppableSectionProps> = ({ 
@@ -478,7 +489,8 @@ const DroppableSection: React.FC<DroppableSectionProps> = ({
   onUpdateBlock, 
   onDeleteBlock,
   onAddColumn,
-  onRemoveColumn
+  onRemoveColumn,
+  onStartCrop
 }) => {
   const {
     attributes,
@@ -550,6 +562,7 @@ const DroppableSection: React.FC<DroppableSectionProps> = ({
             column={column}
             onUpdateBlock={onUpdateBlock}
             onDeleteBlock={onDeleteBlock}
+            onStartCrop={onStartCrop}
           />
         ))}
       </div>
@@ -562,12 +575,14 @@ interface DroppableColumnProps {
   column: LayoutColumn
   onUpdateBlock: (id: string, updates: Partial<ContentBlock>) => void
   onDeleteBlock: (id: string) => void
+  onStartCrop?: (file: File, blockId: string) => void
 }
 
 const DroppableColumn: React.FC<DroppableColumnProps> = ({ 
   column, 
   onUpdateBlock, 
-  onDeleteBlock 
+  onDeleteBlock,
+  onStartCrop
 }) => {
   const { setNodeRef, isOver } = useDroppable({ id: column.id })
 
@@ -586,6 +601,7 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({
               block={block}
               onUpdate={onUpdateBlock}
               onDelete={onDeleteBlock}
+              onStartCrop={onStartCrop}
             />
           ))}
         </div>
@@ -635,6 +651,12 @@ export default function EditCaseStudy() {
   const [featuredVideo, setFeaturedVideo] = useState<string>('')
   const [featuredImage, setFeaturedImage] = useState<string>('')
   const [featuredImageFile, setFeaturedImageFile] = useState<File | null>(null)
+  
+  // Image Crop Modal State
+  const [showCropModal, setShowCropModal] = useState(false)
+  const [imageToCrop, setImageToCrop] = useState<string>('')
+  const [cropType, setCropType] = useState<'featured' | 'block'>('featured')
+  const [cropBlockId, setCropBlockId] = useState<string | null>(null)
 
   // DnD Sensors
   const sensors = useSensors(
@@ -1427,6 +1449,35 @@ export default function EditCaseStudy() {
     }
   }
 
+  // Handle image crop modal
+  const handleStartCrop = (file: File, type: 'featured' | 'block', blockId?: string) => {
+    const imageUrl = URL.createObjectURL(file)
+    setImageToCrop(imageUrl)
+    setCropType(type)
+    setCropBlockId(blockId || null)
+    setShowCropModal(true)
+  }
+
+  const handleCropComplete = (croppedFile: File) => {
+    if (cropType === 'featured') {
+      // Handle featured image
+      setFeaturedImageFile(croppedFile)
+      setFeaturedImage(URL.createObjectURL(croppedFile))
+    } else if (cropType === 'block' && cropBlockId) {
+      // Handle block image
+      updateBlock(cropBlockId, { file: croppedFile })
+    }
+    setShowCropModal(false)
+    setImageToCrop('')
+    setCropBlockId(null)
+  }
+
+  const handleCropCancel = () => {
+    setShowCropModal(false)
+    setImageToCrop('')
+    setCropBlockId(null)
+  }
+
   // Handle featured image upload
   const handleFeaturedImageUpload = async (file: File) => {
     try {
@@ -1762,7 +1813,7 @@ export default function EditCaseStudy() {
                       onChange={(e) => {
                         const file = e.target.files?.[0]
                         if (file) {
-                          setFeaturedImageFile(file)
+                          handleStartCrop(file, 'featured')
                         }
                       }}
                       className="hidden"
@@ -1802,7 +1853,7 @@ export default function EditCaseStudy() {
                             onChange={(e) => {
                               const file = e.target.files?.[0]
                               if (file) {
-                                setFeaturedImageFile(file)
+                                handleStartCrop(file, 'featured')
                               }
                             }}
                             className="hidden"
@@ -1931,6 +1982,7 @@ export default function EditCaseStudy() {
                           onDeleteBlock={deleteBlock}
                           onAddColumn={addColumnToSection}
                           onRemoveColumn={removeColumnFromSection}
+                          onStartCrop={(file, blockId) => handleStartCrop(file, 'block', blockId)}
                         />
                       ))}
                     </div>
@@ -1966,6 +2018,17 @@ export default function EditCaseStudy() {
           </div>
         </motion.div>
       </div>
+
+      {/* Image Crop Modal */}
+      {showCropModal && imageToCrop && (
+        <ImageCropModal
+          image={imageToCrop}
+          onComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+          aspectRatio={cropType === 'featured' ? 16 / 9 : undefined}
+          fileName={cropType === 'featured' ? 'featured-image.jpg' : `block-image-${cropBlockId}.jpg`}
+        />
+      )}
     </div>
   )
 }

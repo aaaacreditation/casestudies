@@ -37,6 +37,7 @@
     "prisma": "^6.13.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-easy-crop": "^5.5.3",
     "tsx": "^4.20.3"
   },
   "devDependencies": {
